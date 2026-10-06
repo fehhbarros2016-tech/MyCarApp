@@ -1,0 +1,53 @@
+.form{display:grid;gap:18px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:grid;gap:6px;min-width:0}
+.full{grid-column:1/-1}
+.field>span{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3)}
+.field>span i{font-style:normal;text-transform:none;letter-spacing:0}
+.inp{position:relative}
+.inp b{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--fg-3);font-weight:500;font-size:14px;pointer-events:none}
+.inp em{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--fg-3);font-style:normal;font-size:13px;pointer-events:none}
+.inp input{width:100%;padding:14px;border-radius:14px;border:1px solid var(--line-2);background:var(--surface);color:var(--fg);font:inherit;font-size:17px;font-variant-numeric:tabular-nums;transition:border-color .25s,background .25s;-webkit-appearance:none;appearance:none;min-height:52px}
+.inp input[data-pre]{padding-left:40px}
+.inp input[data-suf]{padding-right:44px}
+.inp input:focus{outline:none;border-color:rgba(110,240,149,.55);background:var(--surface-2)}
+.inp input[aria-invalid="true"]{border-color:rgba(255,122,110,.6)}
+
+.seg{display:flex;padding:4px;border-radius:14px;background:rgba(0,0,0,.18);border:1px solid var(--line);gap:2px}
+.seg button{flex:1;padding:9px 6px;border-radius:10px;font-size:13px;color:var(--fg-2);transition:background .3s var(--ease),color .3s}
+.seg button[data-on="true"]{background:var(--surface-2);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line-2)}
+.seg button small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--fg-3);margin-top:1px}
+.seg button[data-on="true"] small{color:var(--accent)}
+
+.card{padding:18px 18px 16px;border-radius:24px;background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--line)}
+.card[data-invalid="true"]{border-color:rgba(255,122,110,.45)}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);align-items:center;gap:6px;margin-top:8px}
+.read{min-width:0}
+.liters{font-weight:800;font-variation-settings:"wdth" 112;font-size:clamp(38px,12vw,54px);letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
+.liters small{font-size:.42em;color:var(--fg-3);font-weight:500;margin-left:.15em;letter-spacing:0}
+.bars{margin-top:8px;font-family:var(--mono);font-size:12px;color:var(--fg-2)}
+.hint{margin-top:10px;font-size:12.5px;color:var(--fg-3);max-width:22ch}
+.warn{color:var(--danger)}
+.steps{display:flex;gap:8px;margin-top:14px}
+.steps button{width:40px;height:36px;border-radius:11px;border:1px solid var(--line-2);font-size:18px;color:var(--fg-2);transition:transform .2s var(--ease),border-color .25s,color .25s}
+.steps button:active{transform:scale(.92)}
+
+.result{margin-top:16px;border-top:1px solid var(--line);padding-top:16px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.result>div{padding-left:12px;border-left:1px solid var(--line);min-width:0}
+.result>div:first-child{border-left:0;padding-left:0}
+.result b{display:block;font-size:20px;font-weight:750;letter-spacing:-.02em;margin-top:5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.result b[data-acc]{color:var(--accent)}
+.result span{display:block;font-size:11.5px;color:var(--fg-3);margin-top:2px}
+.note{margin:12px 0 0;font-size:12.5px;color:var(--fg-3)}
+.note[data-alert="true"]{color:var(--warn)}
+
+.error{margin:0;min-height:1.2em;color:var(--danger);font-size:13.5px}
+.submit{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:15px;border-radius:16px;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:16px;transition:transform .2s var(--ease),filter .25s,opacity .25s}
+.submit:hover{filter:brightness(1.06)}
+.submit:active{transform:scale(.98)}
+.submit:disabled{opacity:.7}
+.more{font-size:13.5px;color:var(--fg-2)}
+.more summary{cursor:pointer;list-style:none;color:var(--fg-3)}
+.more summary::-webkit-details-marker{display:none}
+.more[open] summary{margin-bottom:12px}
+.row>svg{order:2}

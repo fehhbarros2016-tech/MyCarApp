@@ -1,0 +1,23 @@
+.card{position:relative;padding:20px;border-radius:22px;background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--line);transition:transform .35s var(--ease),border-color .35s,box-shadow .35s;min-width:0}
+@media (hover:hover){.card:hover{transform:translateY(-2px);border-color:var(--line-2);box-shadow:0 14px 30px rgba(0,0,0,.25)}}
+.cardHead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0}
+.cardHead h3{margin:0;font-family:var(--mono);font-weight:500;font-size:11px;letter-spacing:.16em;color:var(--fg-3);text-transform:uppercase}
+.cardHead a{color:var(--accent);text-decoration:none;font-family:var(--mono);font-size:11.5px}
+
+.empty{display:grid;justify-items:start;gap:6px;padding:14px 0 2px}
+.empty p{margin:0;color:var(--fg-2);font-size:14px;max-width:34ch}
+.empty .icon{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:var(--accent-dim);color:var(--accent);margin-bottom:4px}
+
+.btn{display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:10px 14px;border-radius:13px;border:1px solid rgba(110,240,149,.28);color:var(--accent);text-decoration:none;font-size:13.5px;font-weight:600;transition:transform .2s var(--ease),background .25s,border-color .25s}
+.btn:hover{background:var(--accent-dim);border-color:rgba(110,240,149,.45)}
+.btn:active{transform:scale(.97)}
+
+.badge{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;padding:5px 9px;border-radius:99px;border:1px solid var(--line-2);color:var(--warn);background:rgba(240,196,110,.06);white-space:nowrap}
+
+.bar{position:relative;height:10px;border-radius:6px;background:rgba(255,255,255,.05);overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;border-radius:6px;background:linear-gradient(90deg,#3fae66,var(--accent));transform-origin:left;transform:scaleX(0);transition:transform 1.4s var(--ease) .25s}
+.bar[data-ready="true"] i{transform:scaleX(var(--p))}
+
+.ph{display:grid;gap:4px;margin:18px 0 22px}
+.ph h1{margin:0;font-weight:800;font-variation-settings:"wdth" 118;font-size:34px;letter-spacing:-.03em;text-wrap:balance}
+.ph p{margin:0;color:var(--fg-3)}

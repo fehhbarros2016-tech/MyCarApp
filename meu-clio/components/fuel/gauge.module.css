@@ -1,0 +1,11 @@
+.gauge{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:none}
+.gauge[data-interactive="true"]{touch-action:none;cursor:grab}
+.gauge[data-dragging="true"]{cursor:grabbing}
+.sm{max-width:120px}
+.bar{transition:stroke .25s var(--ease)}
+.lbl{font-family:var(--display);font-weight:800;font-variation-settings:"wdth" 110;font-size:21px;fill:var(--fg-2)}
+.r{fill:#ff5a4e}
+.half{font-family:var(--mono);font-size:10px;fill:var(--fg-3)}
+.needle{transition:transform .35s var(--ease)}
+.gauge[data-dragging="true"] .needle{transition:none}
+.knob{filter:drop-shadow(0 0 6px rgba(110,240,149,.45))}

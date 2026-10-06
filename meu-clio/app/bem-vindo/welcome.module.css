@@ -1,0 +1,27 @@
+.wrap{position:relative;z-index:1;min-height:100dvh;display:grid;align-content:center;gap:8px;padding-inline:20px;padding-block:24px 32px;max-width:480px;margin-inline:auto}
+.hero{position:relative;container-type:inline-size;animation:fadeUp .9s var(--ease) both}
+.word{margin:0;text-align:center;font-weight:900;font-variation-settings:"wdth" 125;font-size:29cqw;line-height:.8;letter-spacing:-.045em;background:linear-gradient(180deg,#fff 30%,rgba(255,255,255,.55));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.car{position:relative;display:block;width:100%;height:auto;margin-top:-15%;filter:drop-shadow(0 18px 28px rgba(0,0,0,.55))}
+.panel{animation:fadeUp .7s var(--ease) .2s both}
+.logo{border-radius:12px;display:block}
+.panel h2{margin:14px 0 4px;font-size:26px;font-weight:800;font-variation-settings:"wdth" 112;letter-spacing:-.02em}
+.sub{margin:0 0 20px;color:var(--fg-2)}
+.form{display:grid;gap:14px}
+.field{display:grid;gap:6px}
+.field>span{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3)}
+.field input{width:100%;padding:14px 16px;border-radius:14px;border:1px solid var(--line-2);background:var(--surface);color:var(--fg);font:inherit;font-size:16px;transition:border-color .25s,background .25s}
+.field input:focus{outline:none;border-color:rgba(110,240,149,.55);background:var(--surface-2)}
+.field input[aria-invalid="true"]{border-color:rgba(255,122,110,.6)}
+.keyRow{position:relative}
+.keyRow input{padding-right:92px}
+.eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);padding:8px 10px;border-radius:10px;font-size:12.5px;color:var(--fg-2)}
+.eye:hover{color:var(--fg)}
+.error{min-height:1.2em;margin:0;color:var(--danger);font-size:13.5px}
+.submit{display:flex;align-items:center;justify-content:center;gap:10px;padding:15px;border-radius:16px;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:16px;transition:transform .2s var(--ease),filter .25s,opacity .25s}
+.submit:hover{filter:brightness(1.06)}
+.submit:active{transform:scale(.98)}
+.submit:disabled{opacity:.75}
+.spinner{width:16px;height:16px;border-radius:50%;border:2px solid rgba(4,20,10,.25);border-top-color:var(--accent-ink);animation:spin .8s linear infinite}
+.hint{margin:4px 0 0;font-size:12.5px;color:var(--fg-3);text-align:center}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}

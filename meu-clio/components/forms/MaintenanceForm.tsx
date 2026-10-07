@@ -6,19 +6,9 @@ import { todayISO } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
 import { ConfirmButton, SubmitButton, useActionFeedback, useRun } from "@/components/ui/client";
 import type { CatLite } from "./ExpenseForm";
+import { SYSTEMS } from "@/lib/constants";
 
-export const SYSTEMS: { value: string; label: string; icon: string }[] = [
-  { value: "motor", label: "Motor", icon: "flame" },
-  { value: "freios", label: "Freios", icon: "target" },
-  { value: "suspensao", label: "Suspensão", icon: "layers" },
-  { value: "pneus", label: "Pneus", icon: "tire" },
-  { value: "eletrica", label: "Elétrica", icon: "bolt" },
-  { value: "arrefecimento", label: "Arrefecimento", icon: "droplet" },
-  { value: "cambio", label: "Câmbio", icon: "gear" },
-  { value: "injecao", label: "Injeção", icon: "fuel" },
-  { value: "escapamento", label: "Escapamento", icon: "road" },
-  { value: "outros", label: "Outros", icon: "tool" },
-];
+export { SYSTEMS } from "@/lib/constants";
 
 const QUICK = [
   { service: "Troca de óleo e filtro", system: "motor", nextKm: 10000 },

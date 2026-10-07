@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import { AddMaintButton } from "@/components/Launchers";
 import { ExpenseList } from "@/components/lists/ExpenseList";
-import { SYSTEMS } from "@/components/forms/MaintenanceForm";
+import { SYSTEMS } from "@/lib/constants";
 import { CatBars } from "@/components/charts/static";
 import { Icon } from "@/components/ui/Icon";
 import { Bar, Card, EmptyState, Money, PageHeader, v } from "@/components/ui/kit";

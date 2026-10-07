@@ -27,13 +27,13 @@ export const AddExpenseButton = ({ categories, lastKm, label = "Novo gasto", cla
   <Launcher label={label} title="Novo gasto" className={className} render={(c) => <ExpenseForm categories={categories} lastKm={lastKm} onDone={c} />} />;
 
 export const AddMaintButton = ({ categories, lastKm, className }: { categories: CatLite[]; lastKm: number | null; className?: string }) =>
-  <Launcher label="Nova manutenção" title="Nova manutenção" className={className} render={(c) => <MaintenanceForm categories={categories} lastKm={lastKm} onDone={c} />} />;
+  <Launcher label="Nova" title="Nova manutenção" className={className} render={(c) => <MaintenanceForm categories={categories} lastKm={lastKm} onDone={c} />} />;
 
 export const AddEventButton = ({ lastKm, className }: { lastKm: number | null; className?: string }) =>
-  <Launcher label="Novo lembrete" title="Novo lembrete" className={className} render={(c) => <EventForm lastKm={lastKm} onDone={c} />} />;
+  <Launcher label="Novo" title="Novo lembrete" className={className} render={(c) => <EventForm lastKm={lastKm} onDone={c} />} />;
 
 export const NewCategoryButton = ({ className }: { className?: string }) =>
-  <Launcher label="Nova categoria" title="Nova categoria" className={className} render={(c) => <CategoryForm onDone={c} />} />;
+  <Launcher label="Nova" title="Nova categoria" className={className} render={(c) => <CategoryForm onDone={c} />} />;
 
 export const PlanButton = ({ className }: { className?: string }) =>
   <Launcher label="Cadastrar compra" icon="receipt" title="Compra e parcelas" className={className} render={(c) => <PlanForm onDone={c} />} />;

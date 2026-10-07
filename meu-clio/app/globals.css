@@ -92,10 +92,11 @@ input,select,textarea{font:inherit;color:inherit}
 
 /* ---------- kit ---------- */
 .ph{display:grid;gap:4px;margin:6px 0 18px}
-.ph-row{display:flex;align-items:center;gap:10px}
-.ph h1{margin:0;flex:1;font-weight:800;font-variation-settings:"wdth" 116;font-size:clamp(28px,8vw,36px);letter-spacing:-.03em;text-wrap:balance}
+.ph-row{display:flex;align-items:center;gap:10px;min-width:0}
+.ph h1{margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;font-variation-settings:"wdth" 116;font-size:clamp(28px,8vw,36px);letter-spacing:-.03em;text-wrap:balance}
 .ph p{margin:0;color:var(--fg-3);font-size:14px}
-.ph-action{display:flex;gap:8px}
+.ph-action{display:flex;gap:8px;flex:none}
+@media (max-width:360px){.ph h1{font-size:24px}.ph-action .btn-primary.sm span,.ph-action .btn-primary.sm{padding:9px 11px}}
 .icon-btn{width:40px;height:40px;flex:none;border-radius:13px;display:grid;place-items:center;color:var(--fg-2);border:1px solid var(--line);background:var(--surface);transition:transform .2s var(--ease),color .2s,border-color .2s}
 .icon-btn:hover{color:var(--fg);border-color:var(--line-2)}
 .icon-btn:active{transform:scale(.92)}
@@ -419,7 +420,7 @@ input,select,textarea{font:inherit;color:inherit}
 .home-grid .col{display:grid;gap:14px;align-content:start;min-width:0}
 .home-grid .card+.card{margin-top:0}
 @media (min-width:980px){.home-grid{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px}}
-.hero{position:relative;isolation:isolate;container-type:inline-size;margin-bottom:-14px}
+.hero{position:relative;isolation:isolate;overflow-x:clip;container-type:inline-size;margin-bottom:-14px}
 .word{position:relative;z-index:0;margin:0;text-align:center;font-weight:900;font-variation-settings:"wdth" 125;font-size:27cqw;line-height:.8;letter-spacing:-.045em;user-select:none;padding-top:.04em;
   background:linear-gradient(180deg,#fff 30%,rgba(255,255,255,.8) 70%,rgba(255,255,255,.45));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .word[data-long="true"]{font-size:19cqw}

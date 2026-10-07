@@ -258,6 +258,6 @@ Primeira abertura: tela de boas-vindas pede nome e código; depois o Início apa
 
 - `vehicles.tank_capacity_l` = 50 e `vehicles.gauge_bars` = 9 (Clio). Cada barra ≈ 5,6 L.
 - `fuel_level_readings`: leituras do marcador (`antes`, `depois` de abastecer ou `manual`), com km quando informado.
-- `record_fuel_fill(...)`: grava gasto + detalhes + leituras antes/depois numa única transação.
+- `save_fuel_fill(...)` (0004; substitui `record_fuel_fill` da 0003): grava gasto + detalhes + leituras antes/depois numa única transação.
 - Litros abastecidos: valor ÷ preço por litro quando o preço é informado; senão, barras que subiram × 5,6 L.
 - Consumo (`lib/fuel.ts`, testado em `tests/fuel.test.ts`): entre leituras consecutivas, litros gastos = nível anterior + abastecido no meio − nível atual; média = km totais ÷ litros totais.

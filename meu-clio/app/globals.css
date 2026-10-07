@@ -5,8 +5,8 @@
   --fg:#ecf3ee; --fg-2:#a9b8ae; --fg-3:#6e8075;
   --accent:#6ef095; --accent-dim:rgba(110,240,149,.14); --accent-ink:#04140a;
   --warn:#f0c46e; --danger:#ff7a6e;
-  --display:var(--font-display),"Helvetica Neue",Arial,sans-serif;
-  --mono:var(--font-mono),ui-monospace,"SF Mono",Menlo,monospace;
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
   --ease:cubic-bezier(.22,.8,.24,1);
   --nav-h:76px;
   color-scheme:dark;

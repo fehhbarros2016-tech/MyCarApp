@@ -161,7 +161,7 @@ function Hero({ word }: { word: string }) {
     <div className={s.hero}>
       <h1 className={s.word} data-long={word.length > 4} aria-label={word}>{word}</h1>
       <div className={s.glow} />
-      <Image className={s.car} src="/car/clio.webp" alt="Renault Clio" width={1014} height={596} priority
+      <Image className={s.car} src="/car/clio.webp" alt="Renault Clio" width={880} height={504} priority
         sizes="(min-width: 980px) 560px, 100vw" />
     </div>
   );

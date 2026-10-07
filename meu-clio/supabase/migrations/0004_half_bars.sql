@@ -17,8 +17,9 @@ do $$ begin
   end if;
 end $$;
 
--- Nova versão da função de abastecimento, com barras decimais.
-create or replace function record_fuel_fill(
+-- Nova função de abastecimento, com barras decimais. Nome novo para não exigir remover a antiga
+-- (record_fuel_fill, de barras inteiras), que fica sem uso e sem permissão para ninguém.
+create or replace function save_fuel_fill(
   p_vehicle uuid, p_date date, p_km int, p_amount numeric,
   p_liters numeric, p_price numeric, p_source text,
   p_fuel_type text, p_bars_before numeric, p_bars_after numeric,
@@ -52,7 +53,4 @@ begin
   return exp;
 end $$;
 
-revoke all on function record_fuel_fill(uuid,date,int,numeric,numeric,numeric,text,text,numeric,numeric,text,text) from public, anon, authenticated;
-
--- A versão antiga (barras inteiras) deixa de ser usada. Remover a função não toca em nenhum dado.
-drop function if exists record_fuel_fill(uuid,date,int,numeric,numeric,numeric,text,text,smallint,smallint,text,text);
+revoke all on function save_fuel_fill(uuid,date,int,numeric,numeric,numeric,text,text,numeric,numeric,text,text) from public, anon, authenticated;

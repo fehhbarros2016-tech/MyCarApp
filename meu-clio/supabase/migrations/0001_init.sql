@@ -137,8 +137,7 @@ begin
   return null;
 end $$;
 
-drop trigger if exists expense_odometer on expenses;
-create trigger expense_odometer after insert or update of odometer on expenses
+create or replace trigger expense_odometer after insert or update of odometer on expenses
   for each row execute function trg_expense_odometer();
 
 -- ---------- agenda ----------

@@ -10,7 +10,7 @@ export default function WelcomePage() {
     <main className={s.wrap}>
       <div className={s.hero}>
         <h1 className={s.word} aria-label="Clio">CLIO</h1>
-        <Image className={s.car} src="/car/clio.webp" alt="Renault Clio" width={1014} height={596} priority />
+        <Image className={s.car} src="/car/clio.webp" alt="Renault Clio" width={880} height={504} priority />
       </div>
       <div className={s.panel}>
         <Image src="/icons/icon-192.png" alt="" width={44} height={44} className={s.logo} />

@@ -1,168 +1,189 @@
 import Image from "next/image";
-import { Card } from "@/components/ui/Card";
-import { CountUp } from "@/components/ui/CountUp";
-import { DemoBadge } from "@/components/ui/DemoBadge";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { ProgressBar } from "@/components/ui/ProgressBar";
-import { WeekChart } from "@/components/home/WeekChart";
+import Link from "next/link";
+import type { CSSProperties } from "react";
+import { MonthChart } from "@/components/charts/MonthChart";
+import { CatBars, Donut } from "@/components/charts/static";
 import { FuelGauge } from "@/components/fuel/FuelGauge";
+import { ExpenseList } from "@/components/lists/ExpenseList";
+import { PrivacyToggle } from "@/components/PrefToggles";
+import { CountUp } from "@/components/ui/CountUp";
+import { Icon } from "@/components/ui/Icon";
+import { Bar, Card, Delta, EmptyState, Money, Ring, v } from "@/components/ui/kit";
+import { alerts, entries, fuelStats, installmentsSummary, monthOverview, totals, upcoming } from "@/lib/calc";
+import { addMonths, brl, countdown, currentMonth, daysUntil, dec1, greeting, intf, monthLong, monthShort } from "@/lib/format";
 import { formatBars } from "@/lib/fuel";
-import { getHomeData } from "@/lib/data/home";
-import { countdown, daysUntil, greeting, km, money } from "@/lib/format";
-import s from "@/components/home/home.module.css";
+import { catsLite, toRows } from "@/lib/rows";
+import { getStore } from "@/lib/store";
+import { IS_PROD } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const d = await getHomeData();
-
-  if (!d.configured) {
-    return (
-      <>
-        <div className={s.top}><p className={s.hello}>Quase lá</p><DemoBadge /></div>
-        <Hero word="CLIO" />
-        <Card title="Conectar o banco" className={`${s.setup} rv`}>
-          <ol>
-            <li>Crie o projeto no Supabase e rode as migrations de <code>supabase/migrations</code>.</li>
-            <li>Preencha <code>SUPABASE_URL</code> e <code>SUPABASE_SERVICE_ROLE_KEY</code> no <code>.env.local</code> ou na Vercel.</li>
-            <li>Recarregue esta página.</li>
-          </ol>
-        </Card>
-      </>
-    );
-  }
-
-  const v = d.vehicle;
-  const inst = d.installments;
-  const hasPurchase = inst.total > 0 || v?.purchasePrice != null;
-  const week = d.last7.reduce((a, p) => a + p.amount, 0);
+  const s = await getStore();
+  if (!s) return <NotConfigured />;
+  const st = s.settings, show = st.home;
+  const m = monthOverview(s);
+  const t = totals(s);
+  const f = fuelStats(s);
+  const inst = installmentsSummary(s);
+  const up = upcoming(s).slice(0, 4);
+  const al = alerts(s);
+  const recent = toRows(s, entries(s)).slice(0, 6);
+  const cats = catsLite(s);
+  const key = currentMonth();
+  const kmPerL = f.kmPerL ? (st.consumptionUnit === "l100" ? `${dec1(100 / f.kmPerL)} L/100` : `${dec1(f.kmPerL)} km/l`) : "—";
 
   return (
-    <>
-      <div className={s.top}>
-        <p className={s.hello}>{greeting()}{d.name ? <>, <b>{d.name}</b></> : null}</p>
-        <DemoBadge />
+    <div className="home">
+      <div className="top rv">
+        <div>
+          <p className="hello">{greeting()}{s.name ? <>, <b>{s.name}</b></> : null}</p>
+          <p className="today">{monthLong(key).replace(/^./, (c) => c.toUpperCase())}{!IS_PROD && <span className="dev-tag">dev</span>}</p>
+        </div>
+        <div className="top-actions">
+          <PrivacyToggle hidden={st.hideValues} />
+          <Link href="/configuracoes" className="icon-btn" aria-label="Configurações"><Icon name="gear" size={18} /></Link>
+        </div>
       </div>
 
-      <div className={s.layout}>
-        <div>
-          <Hero word={v?.heroWord ?? "CLIO"} />
-          <div className={`${s.total} rv`} style={{ "--i": 2 } as React.CSSProperties}>
-            <div className="eyebrow">Custo total</div>
-            <div className={`${s.big} num`}><small>R$</small><CountUp value={d.totalCost} /></div>
-            <p>{d.totalCost ? "Total investido no carro" : "Os valores aparecem conforme você registra"}</p>
-          </div>
-          <div className={`${s.stats} rv`} style={{ "--i": 3 } as React.CSSProperties}>
-            <div className={s.stat}>
-              <div className="eyebrow">Este mês</div>
-              <div className={`${s.v} num`}>R$ {money(d.monthSpend)}</div>
-            </div>
-            <div className={s.stat}>
-              <div className="eyebrow">Custo / km</div>
-              <div className={`${s.v} num`}>{d.costPerKm == null ? <span className={s.dim}>—</span> : `R$ ${money(d.costPerKm, true)}`}</div>
-            </div>
-            <div className={s.stat}>
-              <div className="eyebrow">Parcelas</div>
-              <div className={`${s.v} num`}>{inst.total ? <>{inst.paid}<em> / {inst.total}</em></> : <span className={s.dim}>—</span>}</div>
-            </div>
-          </div>
+      {show.alerts && (
+        <div className="alerts rv" style={v(1)}>
+          {al.map((a) => (
+            <Link key={a.id} href={a.href} className="alert" data-tone={a.tone}>
+              <span className="alert-ic"><Icon name={a.icon} size={17} /></span>
+              <span className="alert-t"><b>{a.title}</b><span>{a.detail}</span></span>
+            </Link>
+          ))}
         </div>
+      )}
 
-        <div className={s.cards}>
-          <Card title="Carro" action={hasPurchase ? { href: "/parcelas", label: "Ver parcelas" } : undefined}
-            className="rv" style={{ "--i": 4 } as React.CSSProperties}>
-            {hasPurchase ? (
-              <>
-                <div className={s.payRow}>
-                  <span className={`${s.price} num`}>{v?.purchasePrice != null ? `R$ ${money(v.purchasePrice)}` : `${inst.total} parcelas`}</span>
-                  <span className={s.pct}>{inst.total ? Math.round((inst.paid / inst.total) * 100) : 0}%</span>
-                </div>
-                <ProgressBar value={inst.total ? inst.paid / inst.total : 0} label="Parcelas pagas" />
-                <div className={s.of}>
-                  {inst.paid} de {inst.total} parcelas pagas
-                  {v?.downPayment ? <> · entrada de R$&nbsp;{money(v.downPayment)}</> : null}
-                </div>
-                <div className={s.meta}>
-                  <div><span>Pago</span><strong className="num">R$ {money((v?.downPayment ?? 0) + inst.paidAmount)}</strong></div>
-                  <div><span>Restante</span><strong className="num">R$ {money(inst.remainingAmount)}</strong></div>
-                </div>
-              </>
-            ) : (
-              <EmptyState icon="receipt" text="Cadastre o valor do carro, a entrada e as parcelas para acompanhar quanto falta pagar."
-                cta={{ href: "/parcelas", label: "Cadastrar compra" }} />
-            )}
-          </Card>
+      <div className="home-grid">
+        <div className="col">
+          <div className="hero rv" style={v(2)}>
+            <h1 className="word" data-long={s.vehicle.heroWord.length > 4} aria-label={s.vehicle.heroWord}>{s.vehicle.heroWord}</h1>
+            <div className="glow" />
+            <Image className="car" src="/car/clio.webp" alt={s.vehicle.name} width={880} height={504} priority sizes="(min-width: 980px) 560px, 100vw" />
+          </div>
 
-          <Card title="Gastos dos últimos 7 dias" className="rv" style={{ "--i": 5 } as React.CSSProperties}>
-            {week > 0 ? (
-              <>
-                <div className={s.sum7}><b className="num">R$ {money(week)}</b><span>média R$ {money(week / 7)}/dia</span></div>
-                <WeekChart data={d.last7} />
-              </>
-            ) : (
-              <EmptyState icon="wallet" text="Nenhum gasto nos últimos 7 dias." cta={{ href: "/gastos", label: "Adicionar gasto" }} />
-            )}
-          </Card>
-
-          <Card title="Próximos eventos" action={d.upcoming.length ? { href: "/agenda", label: "Agenda" } : undefined}
-            className="rv" style={{ "--i": 6 } as React.CSSProperties}>
-            {d.upcoming.length ? (
-              <ul className={s.next}>
-                {d.upcoming.map((e) => {
-                  const days = e.dueDate ? daysUntil(e.dueDate) : null;
-                  const kmLeft = e.dueKm != null && d.lastKm != null ? e.dueKm - d.lastKm : null;
-                  return (
-                    <li key={e.id}>
-                      <i className={s.dot} data-soon={days != null && days <= 5} />
-                      <div className={s.t}><b>{e.title}</b>{e.detail && <span>{e.detail}</span>}</div>
-                      <div className={s.c}>
-                        {days != null ? countdown(days) : kmLeft != null ? (kmLeft > 0 ? `faltam ${km(kmLeft)}` : "km atingido") : ""}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <EmptyState icon="calendar" text="Nada agendado. Parcelas, IPVA, seguro e trocas de óleo aparecem aqui."
-                cta={{ href: "/agenda", label: "Criar lembrete" }} />
-            )}
-          </Card>
-
-          <Card title="Tanque" action={{ href: d.tank ? "/combustivel/nivel" : "/combustivel/novo", label: d.tank ? "Atualizar" : "Abastecer" }}
-            className="rv" style={{ "--i": 7 } as React.CSSProperties}>
-            {d.tank ? (
-              <div className={s.tank}>
-                <FuelGauge bars={d.tank.totalBars} value={d.tank.bars} size="sm" label="Nível do tanque" />
-                <div>
-                  <div className={`${s.tankL} num`}>{d.tank.liters.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}<small>L</small></div>
-                  <div className={s.tankM}>{formatBars(d.tank.bars)} de {d.tank.totalBars} barras · tanque de {d.tank.capacity} L</div>
+          <Card className="month-card rv" style={v(3)}>
+            <div className="month-head">
+              <div>
+                <span className="eyebrow">Gastos de {monthLong(key)}</span>
+                <div className="big num money"><small>R$</small>{st.countUp ? <CountUp value={Math.round(m.total)} /> : intf(Math.round(m.total))}</div>
+                <div className="month-sub">
+                  <Delta value={m.delta} />
+                  <span>{m.delta != null ? `vs ${monthShort(addMonths(key, -1))} (` : ""}{m.delta != null && <Money value={m.prevTotal} />}{m.delta != null ? ")" : `${m.count} ${m.count === 1 ? "lançamento" : "lançamentos"}`}</span>
                 </div>
               </div>
-            ) : (
-              <EmptyState icon="fuel" text="Marque o nível do tanque no marcador para o app saber quanto combustível tem no carro."
-                cta={{ href: "/combustivel/nivel", label: "Marcar nível" }} />
+              {m.budget ? (
+                <Ring value={m.budgetPct ?? 0} size={76} color={(m.budgetPct ?? 0) >= 1 ? "var(--danger)" : (m.budgetPct ?? 0) * 100 >= st.budgetAlertPct ? "var(--warn)" : undefined}>
+                  <b className="num">{Math.round((m.budgetPct ?? 0) * 100)}%</b><span>orçam.</span>
+                </Ring>
+              ) : (
+                <Link href="/configuracoes#orcamento" className="budget-cta"><Icon name="target" size={16} />Definir orçamento</Link>
+              )}
+            </div>
+            {show.chart && (
+              <MonthChart cumulative={m.cumulative} prev={m.prevCumulative} budget={m.budget} days={m.days}
+                label={monthShort(key)} prevLabel={monthShort(addMonths(key, -1))} />
             )}
+            <div className="month-foot">
+              <div><span>Média por dia</span><Money value={m.dailyAvg} /></div>
+              <div><span>Projeção do mês</span>{m.projection ? <Money value={m.projection} /> : <b className="muted">—</b>}</div>
+              <div><span>Maior gasto</span>{m.biggest ? <Money value={m.biggest.amount} /> : <b className="muted">—</b>}</div>
+            </div>
           </Card>
 
-          {d.lastKm == null && (
-            <Card title="Hodômetro" className="rv" style={{ "--i": 8 } as React.CSSProperties}>
-              <EmptyState icon="gauge" text="Informe a quilometragem atual para calcular o custo por km."
-                cta={{ href: "/combustivel/nivel", label: "Informar km" }} />
+          {show.stats && (
+            <div className="tiles rv" style={v(4)}>
+              <Link href="/relatorios" className="tile"><span className="eyebrow">Custo total</span><Money value={t.total} /><small>desde a compra</small></Link>
+              <Link href="/relatorios" className="tile"><span className="eyebrow">Custo / km</span>{t.costPerKm != null ? <Money value={t.costPerKm} cents /> : <b className="muted">—</b>}<small>{t.km.driven ? `${intf(t.km.driven)} km rodados` : "informe o km"}</small></Link>
+              <Link href="/combustivel" className="tile"><span className="eyebrow">Consumo</span><b className="num">{kmPerL}</b><small>{f.segments.length ? `${f.segments.length} medições` : "após 2 abastecimentos"}</small></Link>
+              <Link href="/combustivel" className="tile"><span className="eyebrow">Km atual</span><b className="num">{t.km.last != null ? intf(t.km.last) : "—"}</b><small>{t.km.perMonth ? `${intf(Math.round(t.km.perMonth))} km/mês` : "hodômetro"}</small></Link>
+            </div>
+          )}
+        </div>
+
+        <div className="col">
+          {show.categories && (
+            <Card title="Para onde foi o dinheiro" action={m.count ? { href: "/relatorios", label: "Relatórios" } : undefined} className="rv" style={v(5)}>
+              {m.byCat.length ? (
+                <div className="donut-row">
+                  <Donut data={m.byCat.slice(0, 6).map((c) => ({ label: c.cat.name, value: c.total, color: c.cat.color }))} size={132} stroke={15}>
+                    <b className="num">{m.byCat.length}</b><span>{m.byCat.length === 1 ? "categoria" : "categorias"}</span>
+                  </Donut>
+                  <CatBars total={m.total} data={m.byCat.slice(0, 4).map((c) => ({ name: c.cat.name, icon: c.cat.icon, color: c.cat.color, value: c.total }))} />
+                </div>
+              ) : <EmptyState icon="pie" text="Nenhum gasto neste mês ainda. Toque no + para registrar o primeiro." />}
+            </Card>
+          )}
+
+          {show.tank && (
+            <Card title="Tanque" action={{ href: "/combustivel/nivel", label: "Atualizar" }} className="rv" style={v(6)}>
+              {f.level ? (
+                <div className="tank-row">
+                  <div>
+                    <div className="tank-l num">{dec1(f.level.liters)}<small>L</small></div>
+                    <p className="muted-s">{formatBars(f.level.bars)} de {s.vehicle.bars} barras · tanque de {s.vehicle.tankL} L</p>
+                    {f.autonomyKm ? <p className="autonomy"><Icon name="road" size={14} /> Autonomia de ~{intf(Math.round(f.autonomyKm))} km</p> : null}
+                    <Link href="/combustivel/novo" className="btn-ghost sm"><Icon name="fuel" size={15} />Abastecer</Link>
+                  </div>
+                  <FuelGauge bars={s.vehicle.bars} value={f.level.bars} size="sm" label="Nível do tanque" />
+                </div>
+              ) : <EmptyState icon="gauge" text="Marque no marcador quanto combustível tem agora." cta={{ href: "/combustivel/nivel", label: "Marcar nível" }} />}
+            </Card>
+          )}
+
+          {show.purchase && (
+            <Card title="Compra do carro" action={{ href: "/parcelas", label: inst.total ? "Parcelas" : "Cadastrar" }} className="rv" style={v(7)}>
+              {inst.total ? (
+                <>
+                  <div className="buy-row">
+                    <Ring value={inst.pct} size={70}><b className="num">{Math.round(inst.pct * 100)}%</b></Ring>
+                    <div>
+                      <p className="buy-n"><b className="num">{inst.paid}</b> de {inst.total} parcelas pagas</p>
+                      <p className="muted-s">Faltam <Money value={inst.remainingAmount} /> em {inst.remaining} parcelas</p>
+                      {inst.next && <p className="muted-s">Próxima: {brl(inst.next.amount)} · {countdown(daysUntil(inst.next.dueDate))}</p>}
+                    </div>
+                  </div>
+                  <Bar value={inst.pct} />
+                </>
+              ) : <EmptyState icon="receipt" text="Cadastre valor, entrada e parcelas para ver quanto falta pagar." cta={{ href: "/parcelas", label: "Cadastrar compra" }} />}
+            </Card>
+          )}
+
+          {show.agenda && (
+            <Card title="Próximos eventos" action={{ href: "/agenda", label: "Agenda" }} className="rv" style={v(8)}>
+              {up.length ? (
+                <ul className="next">
+                  {up.map((u) => (
+                    <li key={u.id}>
+                      <i className="dot" data-tone={u.tone} />
+                      <div className="next-t"><b>{u.title}</b>{u.detail && <span>{u.detail}</span>}</div>
+                      <div className="next-c" data-tone={u.tone}>{u.days != null ? countdown(u.days) : u.kmLeft != null ? (u.kmLeft >= 0 ? `faltam ${intf(u.kmLeft)} km` : `passou ${intf(-u.kmLeft)} km`) : ""}</div>
+                    </li>
+                  ))}
+                </ul>
+              ) : <EmptyState icon="calendar" text="Nada agendado. IPVA, seguro, revisões e trocas de óleo aparecem aqui." cta={{ href: "/agenda", label: "Criar lembrete" }} />}
+            </Card>
+          )}
+
+          {show.recent && (
+            <Card title="Últimos lançamentos" action={recent.length ? { href: "/gastos", label: "Ver todos" } : undefined} className="rv" style={v(9)}>
+              {recent.length ? <ExpenseList rows={recent} categories={cats} lastKm={t.km.last} groupByDay={false} />
+                : <EmptyState icon="wallet" text="Seus gastos aparecem aqui. Toque no + para começar." />}
             </Card>
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
-function Hero({ word }: { word: string }) {
+function NotConfigured() {
   return (
-    <div className={s.hero}>
-      <h1 className={s.word} data-long={word.length > 4} aria-label={word}>{word}</h1>
-      <div className={s.glow} />
-      <Image className={s.car} src="/car/clio.webp" alt="Renault Clio" width={880} height={504} priority
-        sizes="(min-width: 980px) 560px, 100vw" />
-    </div>
+    <Card title="Conectar o banco" style={{ marginTop: 24 } as CSSProperties}>
+      <p className="muted-s">Defina SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY na Vercel e recarregue.</p>
+    </Card>
   );
 }

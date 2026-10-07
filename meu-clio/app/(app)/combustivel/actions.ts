@@ -4,17 +4,28 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { estimateFill, litersFromBars } from "@/lib/fuel";
-import { getActiveVehicle } from "@/lib/data/fuel";
 import { db } from "@/lib/supabase/server";
+import { parseMoney } from "@/lib/format";
 
 export type FormState = { error?: string; field?: string };
 
 const money = (v: FormDataEntryValue | null) => {
-  const s = String(v ?? "").trim();
+  const n = parseMoney(v);
+  return n === undefined && String(v ?? "").trim() ? NaN : n;
+};
+/** Preço por litro: vírgula ou ponto são sempre decimais ("6,299" ou "6.299"). */
+const decimal = (v: FormDataEntryValue | null) => {
+  const s = String(v ?? "").replace(/[^\d.,]/g, "").replace(",", ".");
   if (!s) return undefined;
-  const n = Number(s.replace(/\./g, "").replace(",", "."));
+  const n = Number(s);
   return Number.isFinite(n) ? n : NaN;
 };
+
+async function getActiveVehicle() {
+  const { data } = await db().from("vehicles").select("id,tank_capacity_l,gauge_bars")
+    .is("archived_at", null).order("created_at").limit(1).maybeSingle();
+  return data ? { id: data.id as string, tank: { capacity: Number(data.tank_capacity_l), bars: Number(data.gauge_bars) } } : null;
+}
 const int = (v: FormDataEntryValue | null) => {
   const s = String(v ?? "").replace(/\D/g, "");
   return s ? Number(s) : undefined;
@@ -40,7 +51,7 @@ export async function saveFill(_: FormState, form: FormData): Promise<FormState>
     date: String(form.get("date") || today()),
     amount: money(form.get("amount")),
     km: int(form.get("km")),
-    price: money(form.get("price")),
+    price: decimal(form.get("price")),
     fuelType: form.get("fuelType") || "gasolina",
     before: Number(form.get("before")),
     after: Number(form.get("after")),

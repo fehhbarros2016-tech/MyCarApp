@@ -7,6 +7,8 @@ export const metadata: Metadata = { title: "Bem-vindo" };
 
 export default function WelcomePage() {
   return (
+    <>
+    <div className="ambient" aria-hidden />
     <main className={s.wrap}>
       <div className={s.hero}>
         <h1 className={s.word} aria-label="Clio">CLIO</h1>
@@ -19,5 +21,6 @@ export default function WelcomePage() {
         <WelcomeForm />
       </div>
     </main>
+    </>
   );
 }

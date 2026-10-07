@@ -10,14 +10,14 @@ const parse = (v: string) => { const n = Number(v.replace(/\./g, "").replace(","
 const L = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const R = (v: number) => "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export function FillForm({ tank, defaultBefore, lastKm, today }: { tank: Tank; defaultBefore: number; lastKm: number | null; today: string }) {
+export function FillForm({ tank, defaultBefore, lastKm, today, defaultFuel = "gasolina" }: { tank: Tank; defaultBefore: number; lastKm: number | null; today: string; defaultFuel?: string }) {
   const [state, action, pending] = useActionState<FormState, FormData>(saveFill, {});
   const [amount, setAmount] = useState("");
   const [price, setPrice] = useState("");
   const [before, setBefore] = useState(defaultBefore);
   const [after, setAfter] = useState(tank.bars);
   const [mode, setMode] = useState<"before" | "after">("after");
-  const [fuel, setFuel] = useState("gasolina");
+  const [fuel, setFuel] = useState(defaultFuel);
 
   const cur = mode === "after" ? after : before;
   const setCur = mode === "after" ? setAfter : setBefore;

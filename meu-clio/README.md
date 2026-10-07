@@ -13,6 +13,8 @@ Arquitetura completa: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
    - `supabase/migrations/0002_views.sql`
    - `supabase/migrations/0003_fuel_gauge.sql`
    - `supabase/migrations/0004_half_bars.sql`
+   - `supabase/migrations/0005_function_search_path.sql`
+   - `supabase/migrations/0006_app_completo.sql`
 3. Em **Project Settings → API**, copie a **Project URL** e a **service_role key**.
 
 ### 2. Variáveis de ambiente

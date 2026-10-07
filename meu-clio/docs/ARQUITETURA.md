@@ -261,3 +261,13 @@ Primeira abertura: tela de boas-vindas pede nome e código; depois o Início apa
 - `save_fuel_fill(...)` (0004; substitui `record_fuel_fill` da 0003): grava gasto + detalhes + leituras antes/depois numa única transação.
 - Litros abastecidos: valor ÷ preço por litro quando o preço é informado; senão, barras que subiram × 5,6 L.
 - Consumo (`lib/fuel.ts`, testado em `tests/fuel.test.ts`): entre leituras consecutivas, litros gastos = nível anterior + abastecido no meio − nível atual; média = km totais ÷ litros totais.
+
+---
+
+## Versão 1.0 (migration 0006)
+
+- **Leitura única por tela:** `lib/store.ts` busca tudo em paralelo (uma ida e volta) e `React.cache` divide o resultado entre layout e página. Funções rodam em `gru1` (São Paulo), ao lado do banco (`vercel.json`).
+- **Cálculos:** `lib/calc.ts` (mês, projeção, orçamento, categorias, custo total por grupo, custo/km, consumo, óleo, avisos).
+- **Gravações:** `lib/actions.ts` (Server Actions). Exclusões são lógicas (`deleted_at`) e têm "Desfazer".
+- **Banco:** categorias com cor e personalizadas (`color`, `is_custom`), 9 categorias novas, `save_maintenance`, `create_installment_plan`, `complete_event` (repete o lembrete), `scheduled_events.deleted_at`.
+- **Preferências:** `app_settings.prefs` (orçamento, lembretes, unidades, cor de destaque, animações, blocos do início, regras de cálculo).

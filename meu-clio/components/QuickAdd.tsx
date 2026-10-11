@@ -3,13 +3,13 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useActionState, useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { deleteExpense, deleteOdometer, restoreOdometer, saveOdometer, setInstallmentPaid, type ActionResult } from "@/lib/actions";
 import { launchFavorite } from "@/lib/actions-money";
 import { quickCalibration } from "@/lib/actions-car";
 import { brl, dateBR } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
-import { Sheet, SubmitButton, useActionFeedback, useRun } from "@/components/ui/client";
+import { Sheet, SubmitButton, useRun, useFormAction } from "@/components/ui/client";
 import type { CatLite, TripLite } from "@/components/forms/ExpenseForm";
 import type { ShopLite } from "@/components/forms/ShopPicker";
 
@@ -26,8 +26,7 @@ export type FavLite = { id: string; label: string; amount: number; color: string
 export type OdoLite = { id: string; date: string; km: number };
 
 export function OdometerForm({ lastKm, onDone, history = [] }: { lastKm: number | null; onDone?: () => void; history?: OdoLite[] }) {
-  const [state, action, pending] = useActionState<ActionResult, FormData>(saveOdometer, {});
-  useActionFeedback(state, () => onDone?.());
+  const [state, action, pending] = useFormAction(saveOdometer, () => onDone?.());
   const { run } = useRun();
   const [hidden, setHidden] = useState<string[]>([]);
   return (

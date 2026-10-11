@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { deleteExpense, restoreExpense, saveMaintenance, type ActionResult } from "@/lib/actions";
 import { todayISO } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
-import { ConfirmButton, SubmitButton, useActionFeedback, useRun } from "@/components/ui/client";
+import { ConfirmButton, SubmitButton, useRun, useFormAction } from "@/components/ui/client";
 import type { CatLite } from "./ExpenseForm";
 import { SYSTEMS } from "@/lib/constants";
 import { ShopPicker, type ShopLite } from "./ShopPicker";
@@ -29,8 +29,7 @@ const fmt = (v?: number) => (v ? v.toLocaleString("pt-BR", { minimumFractionDigi
 export function MaintenanceForm({ initial, onDone, lastKm, categories, shops = [] }: {
   initial?: MaintInitial; onDone?: () => void; lastKm?: number | null; categories: CatLite[]; shops?: ShopLite[];
 }) {
-  const [state, action, pending] = useActionState<ActionResult, FormData>(saveMaintenance, {});
-  useActionFeedback(state, () => onDone?.());
+  const [state, action, pending] = useFormAction(saveMaintenance, () => onDone?.());
   const { run } = useRun();
   const [system, setSystem] = useState(initial?.system ?? "motor");
   const [service, setService] = useState(initial?.service ?? "");

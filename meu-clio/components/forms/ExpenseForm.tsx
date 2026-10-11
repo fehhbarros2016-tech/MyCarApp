@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { deleteExpense, restoreExpense, saveExpense, type ActionResult } from "@/lib/actions";
 import { todayISO } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
 import { CatIcon } from "@/components/ui/kit";
-import { ConfirmButton, Segmented, SubmitButton, Switch, useActionFeedback, useRun } from "@/components/ui/client";
+import { ConfirmButton, Segmented, SubmitButton, Switch, useRun, useFormAction } from "@/components/ui/client";
 
 export type CatLite = { id: string; slug: string; name: string; icon: string; color: string; archived?: boolean };
 export type TripLite = { id: string; name: string };
@@ -21,8 +21,7 @@ type Repeat = "" | "semanal" | "mensal" | "anual";
 export function ExpenseForm({ categories, initial, onDone, lastKm, trip }: {
   categories: CatLite[]; initial?: ExpenseInitial; onDone?: () => void; lastKm?: number | null; trip?: TripLite | null;
 }) {
-  const [state, action, pending] = useActionState<ActionResult, FormData>(saveExpense, {});
-  useActionFeedback(state, () => onDone?.());
+  const [state, action, pending] = useFormAction(saveExpense, () => onDone?.());
   const { run } = useRun();
   const visible = useMemo(() => categories.filter((c) => !c.archived || c.id === initial?.categoryId), [categories, initial?.categoryId]);
   const [cat, setCat] = useState(initial?.categoryId ?? "");

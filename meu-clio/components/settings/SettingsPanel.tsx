@@ -2,14 +2,14 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useActionState, useEffect, useState, useTransition, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, useTransition, type CSSProperties, type ReactNode } from "react";
 import { saveName, savePrefs, saveVehicle, signOutDevice, type ActionResult } from "@/lib/actions";
 import { setHeroWord } from "@/lib/actions-car";
 import { backupNow } from "@/lib/actions-system";
 import { ACCENTS, ACCENT_LABEL, AMBIENTS, HOME_BLOCKS, NOTIFY_TYPES, type Accent, type Ambient, type HomeBlock, type NotifyType, type Settings } from "@/lib/settings";
 import { applyTheme } from "@/lib/theme";
 import { Icon } from "@/components/ui/Icon";
-import { ConfirmButton, Segmented, SubmitButton, Switch, useActionFeedback, useRun, useToast } from "@/components/ui/client";
+import { ConfirmButton, Segmented, SubmitButton, Switch, useRun, useToast, useFormAction } from "@/components/ui/client";
 import { ImagePicker } from "@/components/forms/ImagePicker";
 import { ActivateVehicleButton } from "@/components/ActionButtons";
 
@@ -100,10 +100,8 @@ export function SettingsPanel(props: {
     toast(n > 0 ? okMsg : "Removido");
   };
 
-  const [nameState, nameAction, namePending] = useActionState<ActionResult, FormData>(saveName, {});
-  useActionFeedback(nameState);
-  const [vState, vAction, vPending] = useActionState<ActionResult, FormData>(saveVehicle, {});
-  useActionFeedback(vState);
+  const [nameState, nameAction, namePending] = useFormAction(saveName);
+  const [vState, vAction, vPending] = useFormAction(saveVehicle);
   const [style, setStyle] = useState(vehicle.photoStyle);
 
   return (

@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { deleteEvent, saveEvent, type ActionResult } from "@/lib/actions";
 import { Icon } from "@/components/ui/Icon";
-import { ConfirmButton, SubmitButton, useActionFeedback, useRun } from "@/components/ui/client";
+import { ConfirmButton, SubmitButton, useRun, useFormAction } from "@/components/ui/client";
 
 export const EVENT_KINDS: { value: string; label: string; icon: string; color: string; months?: number; km?: number }[] = [
   { value: "oleo", label: "Troca de óleo", icon: "oil", color: "#e0b15e", km: 10000 },
@@ -21,8 +21,7 @@ export const kindInfo = (k: string) => EVENT_KINDS.find((e) => e.value === k) ??
 export type EventInitial = { id?: string; kind?: string; title?: string; dueDate?: string | null; dueKm?: number | null; repeatMonths?: number | null; repeatKm?: number | null; note?: string | null };
 
 export function EventForm({ initial, onDone, lastKm }: { initial?: EventInitial; onDone?: () => void; lastKm?: number | null }) {
-  const [state, action, pending] = useActionState<ActionResult, FormData>(saveEvent, {});
-  useActionFeedback(state, () => onDone?.());
+  const [state, action, pending] = useFormAction(saveEvent, () => onDone?.());
   const { run } = useRun();
   const [kind, setKind] = useState(initial?.kind ?? "outros");
   const [title, setTitle] = useState(initial?.title ?? "");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, type CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import {
   deleteAnnual, deleteFavorite, deleteFine, deleteRecurring, deleteTrip, restoreAnnual, restoreFavorite, restoreFine,
   restoreRecurring, restoreTrip, saveAnnual, saveFavorite, saveFine, saveTrip, updateRecurring,
@@ -10,7 +10,7 @@ import { todayISO } from "@/lib/format";
 import { FINE_LABEL, FINE_POINTS } from "@/lib/money";
 import { Icon } from "@/components/ui/Icon";
 import { CatIcon } from "@/components/ui/kit";
-import { ConfirmButton, Segmented, SubmitButton, useActionFeedback, useRun } from "@/components/ui/client";
+import { ConfirmButton, Segmented, SubmitButton, useRun, useFormAction } from "@/components/ui/client";
 import type { CatLite } from "./ExpenseForm";
 
 type Done = { onDone?: () => void };
@@ -41,8 +41,7 @@ export type FineInitial = { id?: string; description?: string; severity?: string
   amount?: number | null; status?: string; note?: string | null };
 
 export function FineForm({ initial, onDone }: Done & { initial?: FineInitial }) {
-  const [s, action, pending] = useActionState<ActionResult, FormData>(saveFine, {});
-  useActionFeedback(s, () => onDone?.());
+  const [s, action, pending] = useFormAction(saveFine, () => onDone?.());
   const [sev, setSev] = useState(initial?.severity ?? "media");
   const [status, setStatus] = useState(initial?.status ?? "aberta");
   const [pts, setPts] = useState(String(initial?.points ?? FINE_POINTS[(initial?.severity ?? "media") as keyof typeof FINE_POINTS]));
@@ -90,8 +89,7 @@ export function FineForm({ initial, onDone }: Done & { initial?: FineInitial }) 
 export type TripInitial = { id?: string; name?: string; startDate?: string; endDate?: string | null; startKm?: number | null; endKm?: number | null; note?: string | null };
 
 export function TripForm({ initial, onDone, lastKm }: Done & { initial?: TripInitial; lastKm?: number | null }) {
-  const [s, action, pending] = useActionState<ActionResult, FormData>(saveTrip, {});
-  useActionFeedback(s, () => onDone?.());
+  const [s, action, pending] = useFormAction(saveTrip, () => onDone?.());
   return (
     <form action={action} className="form" noValidate>
       {initial?.id && <input type="hidden" name="id" value={initial.id} />}
@@ -125,8 +123,7 @@ export function TripForm({ initial, onDone, lastKm }: Done & { initial?: TripIni
 export type AnnualInitial = { id?: string; name?: string; amount?: number; dueMonth?: number; categoryId?: string | null; note?: string | null };
 
 export function AnnualForm({ initial, onDone, categories }: Done & { initial?: AnnualInitial; categories: CatLite[] }) {
-  const [s, action, pending] = useActionState<ActionResult, FormData>(saveAnnual, {});
-  useActionFeedback(s, () => onDone?.());
+  const [s, action, pending] = useFormAction(saveAnnual, () => onDone?.());
   const [month, setMonth] = useState(initial?.dueMonth ?? Number(todayISO().slice(5, 7)));
   const [cat, setCat] = useState(initial?.categoryId ?? "");
   return (
@@ -159,8 +156,7 @@ export function AnnualForm({ initial, onDone, categories }: Done & { initial?: A
 export type FavInitial = { id?: string; label?: string; amount?: number; categoryId?: string; note?: string | null; vendor?: string | null };
 
 export function FavoriteForm({ initial, onDone, categories }: Done & { initial?: FavInitial; categories: CatLite[] }) {
-  const [s, action, pending] = useActionState<ActionResult, FormData>(saveFavorite, {});
-  useActionFeedback(s, () => onDone?.());
+  const [s, action, pending] = useFormAction(saveFavorite, () => onDone?.());
   const [cat, setCat] = useState(initial?.categoryId ?? "");
   const c = categories.find((x) => x.id === cat);
   return (
@@ -194,8 +190,7 @@ export function FavoriteForm({ initial, onDone, categories }: Done & { initial?:
 export type RecInitial = { id: string; amount: number; categoryId: string; note: string | null; frequency: string; nextDate: string; endDate: string | null };
 
 export function RecurringForm({ initial, onDone, categories }: Done & { initial: RecInitial; categories: CatLite[] }) {
-  const [s, action, pending] = useActionState<ActionResult, FormData>(updateRecurring, {});
-  useActionFeedback(s, () => onDone?.());
+  const [s, action, pending] = useFormAction(updateRecurring, () => onDone?.());
   const [cat, setCat] = useState(initial.categoryId);
   const [freq, setFreq] = useState(initial.frequency);
   return (

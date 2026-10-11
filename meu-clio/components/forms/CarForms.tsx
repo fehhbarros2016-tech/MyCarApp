@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, type CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import {
   addVehicle, deleteIssue, deletePart, deletePlanItem, deleteShop, deleteTireEvent, resolveIssue, restoreIssue, restorePart,
   restorePlanItem, restoreShop, restoreTireEvent, saveIssue, savePart, savePlanItem, saveShop, saveTireEvent, saveVehicleInfo,
@@ -9,7 +9,7 @@ import type { ActionResult } from "@/lib/actions";
 import { SYSTEMS } from "@/lib/constants";
 import { todayISO } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
-import { ConfirmButton, Segmented, SubmitButton, Switch, useActionFeedback, useRun } from "@/components/ui/client";
+import { ConfirmButton, Segmented, SubmitButton, Switch, useRun, useFormAction } from "@/components/ui/client";
 import { ImagePicker } from "./ImagePicker";
 import { ShopPicker, type ShopLite } from "./ShopPicker";
 
@@ -46,8 +46,7 @@ export type IssueInitial = { id?: string; title?: string; description?: string |
 const SEVERITY = [{ value: "baixa", label: "Leve" }, { value: "media", label: "Médio" }, { value: "alta", label: "Sério" }];
 
 export function IssueForm({ initial, onDone, lastKm }: Done & { initial?: IssueInitial; lastKm?: number | null }) {
-  const [s, action, pending] = useActionState<ActionResult, FormData>(saveIssue, {});
-  useActionFeedback(s, () => onDone?.());
+  const [s, action, pending] = useFormAction(saveIssue, () => onDone?.());
   const [sev, setSev] = useState(initial?.severity ?? "media");
   return (
     <form action={action} className="form" noValidate>
@@ -74,8 +73,7 @@ export function IssueForm({ initial, onDone, lastKm }: Done & { initial?: IssueI
 }
 
 export function ResolveIssueForm({ id, shops, onDone }: Done & { id: string; shops: ShopLite[] }) {
-  const [s, action, pending] = useActionState<ActionResult, FormData>(resolveIssue, {});
-  useActionFeedback(s, () => onDone?.());
+  const [s, action, pending] = useFormAction(resolveIssue, () => onDone?.());
   return (
     <form action={action} className="form" noValidate>
       <input type="hidden" name="id" value={id} />
@@ -99,8 +97,7 @@ const TIRE_KINDS = [{ value: "calibragem", label: "Calibragem" }, { value: "rodi
 export function TireForm({ initial, onDone, lastKm, shops, defaultSize, recommended }: Done & {
   initial?: TireInitial; lastKm?: number | null; shops: ShopLite[]; defaultSize?: string | null; recommended?: { front: string | null; rear: string | null };
 }) {
-  const [s, action, pending] = useActionState<ActionResult, FormData>(saveTireEvent, {});
-  useActionFeedback(s, () => onDone?.());
+  const [s, action, pending] = useFormAction(saveTireEvent, () => onDone?.());
   const [kind, setKind] = useState(initial?.kind ?? "calibragem");
   const editing = Boolean(initial?.id);
   return (
@@ -161,8 +158,7 @@ export type PlanInitial = { id?: string; name?: string; system?: string; interva
   lastKm?: number | null; lastDate?: string | null; note?: string | null; keyword?: string | null; categorySlug?: string | null };
 
 export function PlanItemForm({ initial, onDone }: Done & { initial?: PlanInitial }) {
-  const [s, action, pending] = useActionState<ActionResult, FormData>(savePlanItem, {});
-  useActionFeedback(s, () => onDone?.());
+  const [s, action, pending] = useFormAction(savePlanItem, () => onDone?.());
   const [system, setSystem] = useState(initial?.system ?? "motor");
   return (
     <form action={action} className="form" noValidate>
@@ -205,8 +201,7 @@ export type PartInitial = { id?: string; name?: string; brand?: string | null; s
 export function PartForm({ initial, onDone, lastKm, shops, replaceable = [] }: Done & {
   initial?: PartInitial; lastKm?: number | null; shops: ShopLite[]; replaceable?: { id: string; name: string }[];
 }) {
-  const [s, action, pending] = useActionState<ActionResult, FormData>(savePart, {});
-  useActionFeedback(s, () => onDone?.());
+  const [s, action, pending] = useFormAction(savePart, () => onDone?.());
   const [system, setSystem] = useState(initial?.system ?? "outros");
   const [name, setName] = useState(initial?.name ?? "");
   const [asExpense, setAsExpense] = useState(true);
@@ -271,8 +266,7 @@ export function PartForm({ initial, onDone, lastKm, shops, replaceable = [] }: D
 // ---------------- oficinas ----------------
 export type ShopInitial = { id?: string; name?: string; kind?: string; phone?: string | null; address?: string | null; note?: string | null };
 export function ShopForm({ initial, onDone }: Done & { initial?: ShopInitial }) {
-  const [s, action, pending] = useActionState<ActionResult, FormData>(saveShop, {});
-  useActionFeedback(s, () => onDone?.());
+  const [s, action, pending] = useFormAction(saveShop, () => onDone?.());
   const [kind, setKind] = useState(initial?.kind ?? "oficina");
   return (
     <form action={action} className="form" noValidate>
@@ -299,8 +293,7 @@ export function ShopForm({ initial, onDone }: Done & { initial?: ShopInitial }) 
 
 // ---------------- garagem e ficha ----------------
 export function AddVehicleForm({ onDone }: Done) {
-  const [s, action, pending] = useActionState<ActionResult, FormData>(addVehicle, {});
-  useActionFeedback(s, () => onDone?.());
+  const [s, action, pending] = useFormAction(addVehicle, () => onDone?.());
   const [activate, setActivate] = useState(true);
   return (
     <form action={action} className="form" noValidate>
@@ -335,8 +328,7 @@ const INFO_GROUPS: { title: string; fields: { k: string; l: string; ph?: string;
 ];
 
 export function VehicleInfoForm({ id, info, onDone }: Done & { id: string; info: InfoFields }) {
-  const [s, action, pending] = useActionState<ActionResult, FormData>(saveVehicleInfo, {});
-  useActionFeedback(s, () => onDone?.());
+  const [s, action, pending] = useFormAction(saveVehicleInfo, () => onDone?.());
   return (
     <form action={action} className="form" noValidate>
       <input type="hidden" name="id" value={id} />

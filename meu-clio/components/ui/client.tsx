@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useActionState, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon";
 import type { ActionResult } from "@/lib/actions";
@@ -47,6 +47,23 @@ export function useActionFeedback(state: ActionResult, onOk?: (s: ActionResult) 
     // erros aparecem dentro do formulário
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.at]);
+}
+
+/**
+ * Formulário com server action. O aviso (toast) sai daqui, antes da tela atualizar: assim ele aparece
+ * mesmo quando o botão que abriu o formulário some depois de salvar (ex.: a lista muda).
+ */
+export function useFormAction(fn: (s: ActionResult, f: FormData) => Promise<ActionResult>, onOk?: (r: ActionResult) => void) {
+  const toast = useToast();
+  const ok = useRef(onOk);
+  ok.current = onOk;
+  return useActionState<ActionResult, FormData>(async (prev, fd) => {
+    let r: ActionResult;
+    try { r = await fn(prev, fd); }
+    catch { r = { ok: false, error: "Sem conexão. Tente de novo.", at: Date.now() }; }
+    if (r.ok) { if (r.msg) toast(r.msg); ok.current?.(r); }
+    return r;
+  }, {});
 }
 
 /** Executa uma action direta (sem formulário) com toast. */

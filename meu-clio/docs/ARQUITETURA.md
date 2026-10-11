@@ -1,4 +1,4 @@
-# Meu Clio — Proposta de arquitetura (v0.2)
+# Meu Clio — Arquitetura (v0.2 → v0.5)
 
 **Decisões do Gabriel (06/10/2026)**
 - O app começa vazio: nenhum valor inicial de compra, parcelas, km ou gastos. Tudo é cadastrado dentro do app.
@@ -271,3 +271,18 @@ Primeira abertura: tela de boas-vindas pede nome e código; depois o Início apa
 - **Gravações:** `lib/actions.ts` (Server Actions). Exclusões são lógicas (`deleted_at`) e têm "Desfazer".
 - **Banco:** categorias com cor e personalizadas (`color`, `is_custom`), 9 categorias novas, `save_maintenance`, `create_installment_plan`, `complete_event` (repete o lembrete), `scheduled_events.deleted_at`.
 - **Preferências:** `app_settings.prefs` (orçamento, lembretes, unidades, cor de destaque, animações, blocos do início, regras de cálculo).
+
+## Versão 0.5 (migration 0007)
+Tudo aditivo: nenhuma tabela ou coluna existente foi removida.
+
+**Novas tabelas:** `shops` (oficinas), `trips` (viagens), `recurring_expenses` (gastos recorrentes), `expense_favorites` (atalhos de gasto), `maintenance_plan` (plano de revisão), `parts` (peças e idade), `tire_events` (pneus), `car_issues` (diário de problemas), `fines` (multas), `annual_costs` (reserva anual), `push_subscriptions` e `push_log` (avisos).
+
+**Novas colunas:** `odometer_readings.deleted_at/note`, `vehicles.info/photo_style`, `categories.monthly_budget`, `expenses.shop_id/trip_id/recurring_id`, `maintenance_records.plan_id`.
+
+**Funções:** `app_snapshot()` devolve todos os dados em uma ida ao banco (e antes roda `run_recurring`); `run_recurring(p_today)` gera os gastos recorrentes sem duplicar (índice único `recurring_id + occurred_on`); `save_maintenance_v2` grava manutenção com oficina, item do plano e viagem.
+
+**Km atual:** passa a ser a leitura mais recente por data (não a maior). Leituras manuais podem ser apagadas.
+
+**Segurança:** RLS ativo e sem políticas em todas as tabelas novas; `anon`/`authenticated` sem permissão. Buckets `media` e `backups` privados. Face ID usa WebAuthn só no aparelho (nenhum dado biométrico sai do iPhone).
+
+**Tema:** claro, escuro ou automático; cor e intensidade do fundo animado configuráveis; tokens de cor em `app/globals.css`.

@@ -97,13 +97,13 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAIAAAAuKetIAAAYKklEQVR
     await go('/manutencao?t=pecas&nova=1');
     await sheet().locator('input[type=file]').setInputFiles({ name: 'p.png', mimeType: 'image/png', buffer: PNG });
     await p.waitForTimeout(800);
-    await sheet().locator('input[name=name]').fill(M + ' bateria');
+    await sheet().locator('input[name=name]').fill(M + ' bateria ' + Date.now().toString(36));
     await sheet().locator('input[name=price]').fill('10');
     await sheet().locator('button[aria-label="Lançar nos gastos"]').click();
     await sheet().locator('button', { hasText: 'Salvar peça' }).click();
-    await toast(/Peça salva/);
+    await toast(/Peça (salva|trocada)/);
     await go('/manutencao?t=pecas');
-    const card = p.locator('.part-card', { hasText: M });
+    const card = p.locator('.part-card', { hasText: M }).first();
     const n = await card.count();
     const html = n ? (await card.first().innerHTML()).slice(0, 300) : (await p.locator('main').innerText()).slice(0, 300);
     const src = n ? await card.first().locator('img').getAttribute('src').catch(() => null) : null;

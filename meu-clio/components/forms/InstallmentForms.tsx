@@ -1,15 +1,14 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { addInstallments, createPlan, updateInstallment, type ActionResult } from "@/lib/actions";
 import { brl, dateFull, todayISO } from "@/lib/format";
-import { SubmitButton, Switch, useActionFeedback } from "@/components/ui/client";
+import { SubmitButton, Switch, useFormAction } from "@/components/ui/client";
 
 const num = (s: string) => Number(s.replace(/\./g, "").replace(",", ".")) || 0;
 
 export function PlanForm({ onDone }: { onDone?: () => void }) {
-  const [state, action, pending] = useActionState<ActionResult, FormData>(createPlan, {});
-  useActionFeedback(state, () => onDone?.());
+  const [state, action, pending] = useFormAction(createPlan, () => onDone?.());
   const [price, setPrice] = useState("");
   const [down, setDown] = useState("");
   const [count, setCount] = useState("");
@@ -62,8 +61,7 @@ export function PlanForm({ onDone }: { onDone?: () => void }) {
 export type InstallmentLite = { id: string; number: number; amount: number; dueDate: string; paidAt: string | null; note: string | null };
 
 export function InstallmentForm({ item, onDone }: { item: InstallmentLite; onDone?: () => void }) {
-  const [state, action, pending] = useActionState<ActionResult, FormData>(updateInstallment, {});
-  useActionFeedback(state, () => onDone?.());
+  const [state, action, pending] = useFormAction(updateInstallment, () => onDone?.());
   const [paid, setPaid] = useState(Boolean(item.paidAt));
   return (
     <form action={action} className="form" noValidate>
@@ -92,8 +90,7 @@ export function InstallmentForm({ item, onDone }: { item: InstallmentLite; onDon
 }
 
 export function AddInstallmentsForm({ defaultAmount, nextDue, onDone }: { defaultAmount: number; nextDue: string; onDone?: () => void }) {
-  const [state, action, pending] = useActionState<ActionResult, FormData>(addInstallments, {});
-  useActionFeedback(state, () => onDone?.());
+  const [state, action, pending] = useFormAction(addInstallments, () => onDone?.());
   return (
     <form action={action} className="form" noValidate>
       <div className="row2">

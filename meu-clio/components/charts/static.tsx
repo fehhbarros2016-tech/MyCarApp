@@ -13,7 +13,7 @@ export function Donut({ data, size = 168, stroke = 18, children }: { data: Slice
     <div className="donut" style={{ width: size, height: size }}>
       <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} role="img"
         aria-label={data.map((d) => `${d.label} ${Math.round((d.value / (total || 1)) * 100)}%`).join(", ")}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.05)" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--track)" strokeWidth={stroke} />
         {total > 0 && data.map((d, i) => {
           const len = (d.value / total) * 100;
           const seg = (
@@ -84,5 +84,41 @@ export function WeekBars({ data }: { data: { label: string; total: number }[] })
         </div>
       ))}
     </div>
+  );
+}
+
+/** Linhas por data (ex.: preço do litro de gasolina e de etanol). Eixo X proporcional ao tempo. */
+export function DateLines({ series, unit, decimals = 2, height = 150 }: {
+  series: { name: string; color: string; points: { date: string; value: number }[] }[]; unit: string; decimals?: number; height?: number;
+}) {
+  const W = 340, H = height, L = 8, R = 8, T = 16, B = 20;
+  const all = series.flatMap((s) => s.points);
+  if (all.length < 2) return null;
+  const t = (d: string) => Date.parse(d + "T12:00:00Z");
+  const t0 = Math.min(...all.map((p) => t(p.date))), t1 = Math.max(...all.map((p) => t(p.date)));
+  const lo = Math.min(...all.map((p) => p.value)), hi = Math.max(...all.map((p) => p.value));
+  const pad = (hi - lo) * 0.15 || hi * 0.04 || 1;
+  const x = (d: string) => L + ((t(d) - t0) / Math.max(1, t1 - t0)) * (W - L - R);
+  const y = (v: number) => T + (1 - (v - (lo - pad)) / (hi - lo + 2 * pad)) * (H - T - B);
+  const f = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  const fmtD = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+  const first = all.reduce((a, p) => (p.date < a.date ? p : a)), last = all.reduce((a, p) => (p.date > a.date ? p : a));
+  return (
+    <svg className="trend" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={series.map((s) => `${s.name}: último ${f(s.points.at(-1)?.value ?? 0)} ${unit}`).join("; ")}>
+      {[0.25, 0.5, 0.75].map((k) => <line key={k} x1={L} x2={W - R} y1={T + k * (H - T - B)} y2={T + k * (H - T - B)} stroke="var(--chart-grid)" />)}
+      {series.filter((s) => s.points.length).map((s) => {
+        const d = s.points.map((p, i) => `${i ? "L" : "M"}${x(p.date).toFixed(1)},${y(p.value).toFixed(1)}`).join("");
+        const lp = s.points[s.points.length - 1];
+        return (
+          <g key={s.name}>
+            <path d={d} fill="none" stroke={s.color} strokeWidth={2.2} strokeLinejoin="round" strokeLinecap="round" pathLength={1} className="trend-line" />
+            {s.points.map((p, i) => <circle key={i} cx={x(p.date)} cy={y(p.value)} r={i === s.points.length - 1 ? 4 : 2.2} fill={i === s.points.length - 1 ? s.color : "var(--bg)"} stroke={s.color} strokeWidth={1.5} />)}
+            <text x={Math.min(x(lp.date), W - R)} y={y(lp.value) - 9} textAnchor="end" className="trend-val" style={{ fill: s.color }}>{f(lp.value)}</text>
+          </g>
+        );
+      })}
+      <text x={L} y={H - 4} className="trend-lbl">{fmtD(first.date)}</text>
+      <text x={W - R} y={H - 4} textAnchor="end" className="trend-lbl">{fmtD(last.date)}</text>
+    </svg>
   );
 }

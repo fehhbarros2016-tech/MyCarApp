@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { MonthChart } from "@/components/charts/MonthChart";
@@ -7,11 +6,12 @@ import { FuelGauge } from "@/components/fuel/FuelGauge";
 import { ExpenseList } from "@/components/lists/ExpenseList";
 import { PrivacyToggle } from "@/components/PrefToggles";
 import { ForecastBlock } from "@/components/ForecastBlock";
+import { Hero } from "@/components/hero/Hero";
 import { CountUp } from "@/components/ui/CountUp";
 import { Icon } from "@/components/ui/Icon";
 import { Bar, Card, Delta, EmptyState, Money, Ring, v } from "@/components/ui/kit";
 import { alerts, entries, forecast, fuelStats, installmentsSummary, monthOverview, totals, upcoming } from "@/lib/calc";
-import { addMonths, brl, countdown, currentMonth, daysUntil, dec1, greeting, intf, monthLong, monthShort } from "@/lib/format";
+import { addMonths, brl, countdown, currentMonth, daysUntil, dec1, greeting, intf, monthLong, monthShort, todayISO } from "@/lib/format";
 import { formatBars } from "@/lib/fuel";
 import { catsLite, toRows } from "@/lib/rows";
 import { getStore } from "@/lib/store";
@@ -33,6 +33,9 @@ export default async function HomePage() {
   const recent = toRows(s, entries(s)).slice(0, 6);
   const cats = catsLite(s);
   const key = currentMonth();
+  const today = todayISO();
+  const prevKey = addMonths(key, -1);
+  const showSummary = Number(today.slice(8, 10)) <= 7 && s.expenses.some((e) => e.date.startsWith(prevKey));
   const kmPerL = f.kmPerL ? (st.consumptionUnit === "l100" ? `${dec1(100 / f.kmPerL)} L/100` : `${dec1(f.kmPerL)} km/l`) : "—";
 
   return (
@@ -43,10 +46,19 @@ export default async function HomePage() {
           <p className="today">{monthLong(key).replace(/^./, (c) => c.toUpperCase())}{!IS_PROD && <span className="dev-tag">dev</span>}</p>
         </div>
         <div className="top-actions">
+          <Link href="/buscar" className="icon-btn" aria-label="Buscar"><Icon name="search" size={18} /></Link>
           <PrivacyToggle hidden={st.hideValues} />
           <Link href="/configuracoes" className="icon-btn" aria-label="Configurações"><Icon name="gear" size={18} /></Link>
         </div>
       </div>
+
+      {showSummary && (
+        <Link href={`/resumo/${prevKey}`} className="summary-banner rv" style={v(1)}>
+          <span className="q-ic" style={{ "--c": "#b49cff" } as CSSProperties}><Icon name="sparkle" size={18} /></span>
+          <span><b>Seu resumo de {monthLong(prevKey)} está pronto</b><span>Quanto gastou, rodou e economizou</span></span>
+          <Icon name="chevron" size={16} />
+        </Link>
+      )}
 
       {show.alerts && (
         <div className="alerts rv" style={v(1)}>
@@ -61,11 +73,7 @@ export default async function HomePage() {
 
       <div className="home-grid">
         <div className="col">
-          <div className="hero rv" style={v(2)}>
-            <h1 className="word" data-long={s.vehicle.heroWord.length > 4} aria-label={s.vehicle.heroWord}>{s.vehicle.heroWord}</h1>
-            <div className="glow" />
-            <Image className="car" src="/car/clio.webp" alt={s.vehicle.name} width={880} height={504} priority sizes="(min-width: 980px) 560px, 100vw" />
-          </div>
+          <Hero v={s.vehicle} showBrand={st.heroBrand} />
 
           <Card className="month-card rv" style={v(3)}>
             <div className="month-head">
@@ -102,7 +110,7 @@ export default async function HomePage() {
               <Link href="/relatorios" className="tile"><span className="eyebrow">Custo total</span><Money value={t.total} /><small>desde a compra</small></Link>
               <Link href="/relatorios" className="tile"><span className="eyebrow">Custo / km</span>{t.costPerKm != null ? <Money value={t.costPerKm} cents /> : <b className="muted">—</b>}<small>{t.km.driven ? `${intf(t.km.driven)} km rodados` : "informe o km"}</small></Link>
               <Link href="/combustivel" className="tile"><span className="eyebrow">Consumo</span><b className="num">{kmPerL}</b><small>{f.segments.length ? `${f.segments.length} medições` : "após 2 abastecimentos"}</small></Link>
-              <Link href="/combustivel" className="tile"><span className="eyebrow">Km atual</span><b className="num">{t.km.last != null ? intf(t.km.last) : "—"}</b><small>{t.km.perMonth ? `${intf(Math.round(t.km.perMonth))} km/mês` : "hodômetro"}</small></Link>
+              <Link href="/?add=km" className="tile" scroll={false}><span className="eyebrow">Km atual</span><b className="num">{t.km.last != null ? intf(t.km.last) : "—"}</b><small>{t.km.perDay ? `${intf(Math.round(t.km.perDay))} km/dia · ${intf(Math.round(t.km.perMonth!))}/mês` : "toque para atualizar"}</small></Link>
             </div>
           )}
         </div>
@@ -126,12 +134,12 @@ export default async function HomePage() {
               {f.level ? (
                 <div className="tank-row">
                   <div>
-                    <div className="tank-l num">{dec1(f.level.liters)}<small>L</small></div>
-                    <p className="muted-s">{formatBars(f.level.bars)} de {s.vehicle.bars} barras · tanque de {s.vehicle.tankL} L</p>
-                    {f.autonomyKm ? <p className="autonomy"><Icon name="road" size={14} /> Autonomia de ~{intf(Math.round(f.autonomyKm))} km</p> : null}
+                    <div className="tank-l num">{dec1(f.litersNow ?? f.level.liters)}<small>L</small></div>
+                    <p className="muted-s">{f.estimated ? `estimado agora · marcado ${formatBars(f.level.bars)} de ${s.vehicle.bars}` : `${formatBars(f.level.bars)} de ${s.vehicle.bars} barras · tanque de ${s.vehicle.tankL} L`}</p>
+                    {f.autonomyKm ? <p className="autonomy"><Icon name="road" size={14} /> Dá para rodar ~{intf(Math.round(f.autonomyKm))} km</p> : null}
                     <Link href="/combustivel/novo" className="btn-ghost sm"><Icon name="fuel" size={15} />Abastecer</Link>
                   </div>
-                  <FuelGauge bars={s.vehicle.bars} value={f.level.bars} size="sm" label="Nível do tanque" />
+                  <FuelGauge bars={s.vehicle.bars} value={f.litersNow != null ? Math.max(0, Math.round((f.litersNow / s.vehicle.tankL) * s.vehicle.bars * 2) / 2) : f.level.bars} size="sm" label="Nível do tanque" />
                 </div>
               ) : <EmptyState icon="gauge" text="Marque no marcador quanto combustível tem agora." cta={{ href: "/combustivel/nivel", label: "Marcar nível" }} />}
             </Card>
@@ -160,7 +168,7 @@ export default async function HomePage() {
               {up.length ? (
                 <ul className="next">
                   {up.map((u) => (
-                    <li key={u.id}>
+                    <li key={u.id} data-src={u.source}>
                       <i className="dot" data-tone={u.tone} />
                       <div className="next-t"><b>{u.title}</b>{u.detail && <span>{u.detail}</span>}</div>
                       <div className="next-c" data-tone={u.tone}>{u.days != null ? countdown(u.days) : u.kmLeft != null ? (u.kmLeft >= 0 ? `faltam ${intf(u.kmLeft)} km` : `passou ${intf(-u.kmLeft)} km`) : ""}</div>

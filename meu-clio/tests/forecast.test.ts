@@ -2,26 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { forecast } from "../lib/calc";
 import { addMonths, currentMonth } from "../lib/format";
-import { DEFAULT_SETTINGS } from "../lib/settings";
-import type { Category, Store } from "../lib/store";
+import { cat, exp as mk, store as mkStore } from "./helpers";
+import type { Expense, Store } from "../lib/store";
 
-const cat = (id: string, slug: string, group: Category["group"] = "uso"): Category =>
-  ({ id, slug, name: slug, icon: "box", color: "#6ef095", group, sort: 0, archived: false, custom: false });
 const cats = [cat("c", "combustivel"), cat("m", "manutencao", "manutencao"), cat("s", "seguro", "protecao"), cat("i", "ipva", "documentacao")];
 const K = currentMonth();
 const d = (monthsAgo: number, day = 10) => `${addMonths(K, -monthsAgo)}-${String(day).padStart(2, "0")}`;
-let n = 0;
-const exp = (catId: string, date: string, amount: number) =>
-  ({ id: `e${n++}`, date, amount, km: null, vendor: null, note: null, categoryId: catId, createdAt: date, fuel: null, maint: null });
-
-function store(expenses: ReturnType<typeof exp>[], extra: Partial<Store> = {}): Store {
-  return {
-    name: "x", settings: { ...DEFAULT_SETTINGS }, categories: cats, catById: new Map(cats.map((c) => [c.id, c])),
-    vehicle: { id: "v", name: "Clio", make: null, model: null, year: null, plate: null, heroWord: "CLIO", purchaseDate: null,
-      purchasePrice: null, downPayment: null, initialKm: null, tankL: 50, bars: 9 },
-    expenses: expenses.sort((a, b) => b.date.localeCompare(a.date)), installments: [], events: [], levels: [], odometer: [], ...extra,
-  };
-}
+const exp = (catId: string, date: string, amount: number) => mk(catId, date, amount);
+const store = (expenses: Expense[], extra: Partial<Store> = {}) => mkStore(expenses, extra, cats);
 
 test("média por categoria dos meses completos, com zero nos meses sem gasto", () => {
   // combustível 400/mês nos últimos 3 meses; manutenção 300 em um deles; uso começou há 3 meses

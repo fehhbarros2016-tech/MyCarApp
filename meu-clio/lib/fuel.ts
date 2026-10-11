@@ -86,3 +86,29 @@ export function averageKmPerLiter(segments: Segment[]): number | null {
   const l = segments.reduce((s, x) => s + x.liters, 0);
   return l > 0 ? km / l : null;
 }
+
+// ---------- etanol ou gasolina ----------
+export const ETHANOL_RATIO = 0.7; // regra geral: etanol rende ~70% da gasolina
+
+export type FuelChoice = {
+  kmlG: number; kmlE: number; costKmG: number; costKmE: number; best: "gasolina" | "etanol" | "empate";
+  savingPct: number;            // quanto o melhor economiza por km
+  breakEvenEthanol: number;     // preço do etanol que empata com a gasolina
+  ratio: number;                // rendimento do etanol ÷ gasolina usado na conta
+  basis: "seus dados" | "seus dados + 70%" | "regra dos 70%";
+};
+
+/** Compara o custo por km. Usa o km/l real de cada combustível quando existe; senão, a proporção de 70%. */
+export function compareFuels(priceG: number, priceE: number, kmlG?: number | null, kmlE?: number | null): FuelChoice | null {
+  if (!(priceG > 0) || !(priceE > 0)) return null;
+  let g = kmlG && kmlG > 0 ? kmlG : null;
+  let e = kmlE && kmlE > 0 ? kmlE : null;
+  const basis: FuelChoice["basis"] = g && e ? "seus dados" : g || e ? "seus dados + 70%" : "regra dos 70%";
+  if (g && !e) e = g * ETHANOL_RATIO;
+  if (e && !g) g = e / ETHANOL_RATIO;
+  if (!g || !e) { g = 10; e = 10 * ETHANOL_RATIO; }
+  const costKmG = priceG / g, costKmE = priceE / e;
+  const diff = Math.abs(costKmG - costKmE) / Math.max(costKmG, costKmE);
+  const best = diff < 0.01 ? "empate" : costKmE < costKmG ? "etanol" : "gasolina";
+  return { kmlG: g, kmlE: e, costKmG, costKmE, best, savingPct: diff, breakEvenEthanol: priceG * (e / g), ratio: e / g, basis };
+}

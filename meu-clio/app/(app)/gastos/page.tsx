@@ -6,8 +6,8 @@ import { ExpenseList } from "@/components/lists/ExpenseList";
 import { Icon } from "@/components/ui/Icon";
 import { Card, CatIcon, Delta, EmptyState, Money, PageHeader, v } from "@/components/ui/kit";
 import { byCategory, entries, kmStats } from "@/lib/calc";
-import { addMonths, currentMonth, monthKey, monthLong } from "@/lib/format";
-import { catsLite, toRows } from "@/lib/rows";
+import { addMonths, currentMonth, monthKey, monthLong, todayISO } from "@/lib/format";
+import { activeTrip, catsLite, shopsLite, toRows } from "@/lib/rows";
 import { getStore } from "@/lib/store";
 
 export const metadata: Metadata = { title: "Gastos" };
@@ -30,7 +30,11 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
 
   return (
     <>
-      <PageHeader title="Gastos" action={<AddExpenseButton categories={catsLite(s)} lastKm={kmStats(s).last} label="Novo" />} />
+      <PageHeader title="Gastos" action={<>
+        <Link href="/buscar" className="icon-btn" aria-label="Buscar"><Icon name="search" size={18} /></Link>
+        <Link href="/gastos/rapidos" className="icon-btn" aria-label="Favoritos e recorrentes"><Icon name="star" size={18} /></Link>
+        <AddExpenseButton categories={catsLite(s)} lastKm={kmStats(s).last} label="Novo" trip={activeTrip(s, todayISO())} />
+      </>} />
 
       <div className="month-nav rv" style={v(1)}>
         <Link href={q(addMonths(key, -1), sp.c)} className="icon-btn" aria-label="Mês anterior" scroll={false}><Icon name="back" size={18} /></Link>
@@ -62,7 +66,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
       )}
 
       {list.length ? (
-        <ExpenseList rows={toRows(s, list)} categories={catsLite(s)} lastKm={kmStats(s).last} />
+        <ExpenseList rows={toRows(s, list)} categories={catsLite(s)} lastKm={kmStats(s).last} shops={shopsLite(s)} trip={activeTrip(s, todayISO())} />
       ) : (
         <Card className="rv" style={v(3)}>
           <EmptyState icon="wallet" text={isCurrent ? "Nenhum gasto neste mês. Toque em Novo ou no + para registrar." : "Nenhum gasto neste mês."} />

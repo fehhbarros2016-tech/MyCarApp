@@ -42,10 +42,10 @@ export function FuelGauge({ bars = 9, value, onChange, base, label = "Nível do 
 
   const red = value <= 1.5;
   const color = (n: number) => {
-    if (n - 0.5 === value) return red ? "rgba(255,90,78,.45)" : "rgba(110,240,149,.45)"; // meia barra
-    if (n > value) return "rgba(255,255,255,.08)";
+    if (n - 0.5 === value) return red ? "color-mix(in srgb, var(--danger) 45%, transparent)" : "color-mix(in srgb, var(--accent) 45%, transparent)"; // meia barra
+    if (n > value) return "var(--track)";
     if (red) return "var(--danger)";
-    return base != null && n <= base ? "rgba(110,240,149,.38)" : "var(--accent)";
+    return base != null && n <= base ? "color-mix(in srgb, var(--accent) 38%, transparent)" : "var(--accent)";
   };
 
   const [rx, ry] = pt(160, ang(1) + 7);
@@ -67,7 +67,7 @@ export function FuelGauge({ bars = 9, value, onChange, base, label = "Nível do 
         if (e.key === "ArrowUp" || e.key === "ArrowLeft") { e.preventDefault(); set(value + 0.5); }
         if (e.key === "ArrowDown" || e.key === "ArrowRight") { e.preventDefault(); set(value - 0.5); }
       } : undefined}>
-      <path d={`M ${t1x} ${t1y} A ${RT} ${RT} 0 0 0 ${t2x} ${t2y}`} fill="none" stroke="rgba(200,255,215,.08)" strokeWidth={2} strokeLinecap="round" />
+      <path d={`M ${t1x} ${t1y} A ${RT} ${RT} 0 0 0 ${t2x} ${t2y}`} fill="none" stroke="var(--chart-axis)" strokeWidth={2} strokeLinecap="round" />
       {Array.from({ length: bars }, (_, i) => {
         const n = i + 1, a = ang(n);
         const [x1, y1] = pt(R1, a), [x2, y2] = pt(R2, a);
@@ -76,12 +76,12 @@ export function FuelGauge({ bars = 9, value, onChange, base, label = "Nível do 
       <text className={`${s.lbl} ${s.r}`} x={rx} y={ry + 8} textAnchor="middle">R</text>
       <text className={s.lbl} x={ix} y={iy + 4} textAnchor="middle">I</text>
       <text className={s.half} x={hx} y={hy + 4} textAnchor="middle">½</text>
-      <g transform={`translate(${CX - 28},${CY - 13}) scale(-.9,.9)`} fill="none" stroke="rgba(236,243,238,.35)" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+      <g transform={`translate(${CX - 28},${CY - 13}) scale(-.9,.9)`} fill="none" stroke="var(--fg-3)" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
         <path d="M2 26V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v22M0 26h17M5 6h7v6H5zM15 13h2.5a2 2 0 0 1 2 2v5a1.8 1.8 0 0 0 3.6 0V9l-3.5-3.5" />
       </g>
       <g className={s.needle} style={{ transform: `rotate(${-ang(value)}deg)`, transformOrigin: `${CX}px ${CY}px` }}>
         <line x1={CX} y1={CY} x2={CX - RN} y2={CY} stroke="var(--fg)" strokeWidth={3} strokeLinecap="round" />
-        <circle cx={CX} cy={CY} r={9} fill="#0b1912" stroke="rgba(236,243,238,.5)" strokeWidth={2} />
+        <circle cx={CX} cy={CY} r={9} fill="var(--bg)" stroke="var(--fg-2)" strokeWidth={2} />
         {interactive && <circle className={s.knob} cx={CX - RT} cy={CY} r={11} fill={red ? "var(--danger)" : "var(--accent)"} stroke="var(--accent-ink)" strokeWidth={3} />}
       </g>
     </svg>

@@ -11,3 +11,5 @@ export const SYSTEMS: { value: string; label: string; icon: string }[] = [
   { value: "escapamento", label: "Escapamento", icon: "road" },
   { value: "outros", label: "Outros", icon: "tool" },
 ];
+
+export const SYS_LABEL: Record<string, string> = Object.fromEntries(SYSTEMS.map((s) => [s.value, s.label]));

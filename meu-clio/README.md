@@ -1,4 +1,4 @@
-# Meu Clio
+# Meu Clio — v0.5
 
 App pessoal (PWA) para controlar gastos, parcelas e manutenção do carro. Next.js + TypeScript na Vercel, banco no Supabase.
 
@@ -15,6 +15,7 @@ Arquitetura completa: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
    - `supabase/migrations/0004_half_bars.sql`
    - `supabase/migrations/0005_function_search_path.sql`
    - `supabase/migrations/0006_app_completo.sql`
+   - `supabase/migrations/0007_v05.sql`
 3. Em **Project Settings → API**, copie a **Project URL** e a **service_role key**.
 
 ### 2. Variáveis de ambiente
@@ -27,7 +28,7 @@ Nunca use o prefixo `NEXT_PUBLIC_` nessas chaves. O `.env.local` não vai para o
 ### 3. GitHub e Vercel
 1. Crie um repositório **privado** no GitHub e envie esta pasta (o `.env.local` fica de fora sozinho).
 2. Na Vercel: **Add New → Project**, importe o repositório.
-3. Em **Settings → Environment Variables**, cadastre as 5 variáveis do `.env.local`. Em produção, use `NEXT_PUBLIC_APP_ENV=production`.
+3. Em **Settings → Environment Variables**, cadastre as variáveis do `.env.local`, mais `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (notificações) e `CRON_SECRET` (rotina diária). Em produção, use `NEXT_PUBLIC_APP_ENV=production`.
 4. Deploy.
 
 ### 4. iPhone
@@ -50,3 +51,13 @@ npm run dev        # http://localhost:3000
 - Trocar a chave: `npm run chave`, cole o novo `ACCESS_KEY_HASH` na Vercel e faça redeploy.
 - Desconectar todos os aparelhos: troque o `SESSION_SECRET` na Vercel.
 - O navegador nunca acessa o banco; a chave pública do Supabase não é usada e o RLS bloqueia tudo para ela.
+
+## Rotina diária, avisos e backup (v0.5)
+- `vercel.json` agenda `/api/cron/daily` todo dia às 08:47 (horário de Brasília). Ela gera gastos recorrentes, envia avisos push e, uma vez por semana, salva um backup JSON no bucket privado `backups` do Supabase.
+- A rota só aceita `Authorization: Bearer $CRON_SECRET`.
+- Avisos push exigem o app instalado na Tela de Início do iPhone (iOS 16.4+) e ativados em **Configurações → Avisos**.
+- Fotos (peças, veículo) ficam no bucket privado `media` e só saem pela rota `/api/media`, que exige sessão.
+
+## Testes
+- `npm test` roda os testes de cálculo.
+- `tests/e2e/` tem os testes de navegador (Playwright); veja `tests/e2e/README.md`. Eles criam registros com o prefixo `teste-auto-v05`, que depois devem ser removidos com exclusão lógica.

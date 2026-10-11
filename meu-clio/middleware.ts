@@ -11,5 +11,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/|icons/|car/|manifest.webmanifest|favicon.ico|robots.txt).*)"],
+  matcher: ["/((?!_next/|icons/|car/|sw.js|api/cron/|manifest.webmanifest|favicon.ico|robots.txt).*)"],
 };

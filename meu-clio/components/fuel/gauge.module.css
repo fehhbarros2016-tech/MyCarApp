@@ -8,4 +8,4 @@
 .half{font-family:var(--mono);font-size:10px;fill:var(--fg-3)}
 .needle{transition:transform .35s var(--ease)}
 .gauge[data-dragging="true"] .needle{transition:none}
-.knob{filter:drop-shadow(0 0 6px rgba(110,240,149,.45))}
+.knob{filter:drop-shadow(0 0 6px var(--accent-soft))}

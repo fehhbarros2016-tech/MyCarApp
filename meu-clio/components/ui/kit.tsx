@@ -87,7 +87,7 @@ export function Ring({ value, size = 64, stroke = 7, color, children }: { value:
   return (
     <div className="ring" style={{ width: size, height: size }}>
       <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} aria-hidden>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.07)" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--track)" strokeWidth={stroke} />
         <circle className="ring-p" cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color ?? "var(--accent)"} strokeWidth={stroke}
           strokeLinecap="round" pathLength={100} style={{ "--p": p * 100 } as CSSProperties} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
       </svg>
@@ -98,4 +98,17 @@ export function Ring({ value, size = 64, stroke = 7, color, children }: { value:
 
 export function Pill({ tone = "ok", children }: { tone?: "ok" | "warn" | "danger" | "info" | "muted"; children: ReactNode }) {
   return <span className="pill" data-tone={tone}>{children}</span>;
+}
+
+/** Abas por link (?t=...), roláveis no celular. */
+export function TabLinks({ tabs, active, base }: { tabs: { v: string; l: string; icon: string; n?: number }[]; active: string; base: string }) {
+  return (
+    <nav className="set-tabs rv" aria-label="Seções">
+      {tabs.map((t) => (
+        <Link key={t.v} href={`${base}?t=${t.v}`} data-on={active === t.v} aria-current={active === t.v ? "page" : undefined} scroll={false} replace>
+          <Icon name={t.icon} size={16} /><span>{t.l}</span>{t.n ? <em className="tab-n">{t.n}</em> : null}
+        </Link>
+      ))}
+    </nav>
+  );
 }

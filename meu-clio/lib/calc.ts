@@ -1,11 +1,17 @@
 // Todos os números do app. Funções puras sobre o Store: fáceis de testar e rápidas.
-import { averageKmPerLiter, consumptionSegments } from "@/lib/fuel";
+import { averageKmPerLiter, consumptionSegments, type Segment } from "@/lib/fuel";
 import { addMonths, currentMonth, daysInMonth, daysUntil, monthKey, todayISO, weekdayIdx } from "@/lib/format";
+import { kmStats } from "@/lib/km";
+import { categoryBudgets, finePoints } from "@/lib/money";
+import { oilPlanItem, planStatus, planStatuses } from "@/lib/plan";
+import { tireStatus } from "@/lib/tires";
 import type { Category, CostGroup, Store } from "@/lib/store";
+
+export { kmStats } from "@/lib/km";
 
 export const INSTALLMENT_CAT: Category = {
   id: "parcelas", slug: "parcelas", name: "Parcelas do carro", icon: "receipt", color: "#8fb8ff",
-  group: "outros", sort: 0, archived: false, custom: false,
+  group: "outros", sort: 0, archived: false, custom: false, budget: null,
 };
 
 export const GROUP_LABEL: Record<CostGroup | "compra", string> = {
@@ -124,18 +130,6 @@ export function installmentsSummary(s: Store) {
   };
 }
 
-export function kmStats(s: Store) {
-  const o = s.odometer;
-  if (!o.length) return { first: null as number | null, last: null as number | null, driven: 0, lastDate: null as string | null, perMonth: null as number | null };
-  const first = Math.min(...o.map((r) => r.km));
-  const lastR = o.reduce((b, r) => (r.km > b.km ? r : b), o[0]);
-  const firstR = o.reduce((b, r) => (r.km < b.km ? r : b), o[0]);
-  const driven = lastR.km - first;
-  const spanDays = firstR.date.startsWith("1900") ? 0 : daysUntil(lastR.date, firstR.date);
-  return { first, last: lastR.km, driven, lastDate: lastR.date,
-    perMonth: spanDays >= 14 && driven > 0 ? driven / (spanDays / 30.4) : null };
-}
-
 export function totals(s: Store) {
   const inst = installmentsSummary(s);
   const usage = sum(s.expenses);
@@ -156,6 +150,8 @@ export function totals(s: Store) {
   };
 }
 
+export type TypeStats = { kmPerL: number | null; km: number; liters: number; avgPrice: number | null; lastPrice: number | null; fills: number };
+
 export function fuelStats(s: Store) {
   const fills = s.expenses.filter((e) => e.fuel).sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
   const segs = consumptionSegments(
@@ -165,30 +161,71 @@ export function fuelStats(s: Store) {
   const liters = fills.reduce((a, f) => a + f.fuel!.liters, 0);
   const spent = sum(fills);
   const last = s.levels.at(-1) ?? null;
+  const kmPerL = averageKmPerLiter(segs);
+
+  // combustível de cada trecho = o do último abastecimento até o início do trecho
+  const typeOf = (seg: Segment) => [...fills].reverse().find((f) => f.km != null && (f.km as number) <= seg.fromKm)?.fuel?.fuelType
+    ?? fills.find((f) => f.km != null && (f.km as number) <= seg.toKm)?.fuel?.fuelType ?? null;
+  const byType: Record<"gasolina" | "etanol", TypeStats> = { gasolina: emptyType(), etanol: emptyType() };
+  for (const t of ["gasolina", "etanol"] as const) {
+    const tf = fills.filter((f) => f.fuel!.fuelType === t);
+    const tl = tf.reduce((a, f) => a + f.fuel!.liters, 0);
+    const ts = segs.filter((x) => typeOf(x) === t);
+    byType[t] = { kmPerL: averageKmPerLiter(ts), km: ts.reduce((a, x) => a + x.km, 0), liters: tl,
+      avgPrice: tl > 0 ? sum(tf) / tl : null, lastPrice: tf.at(-1)?.fuel?.price ?? null, fills: tf.length };
+  }
+
+  // nível estimado agora: última leitura menos o que foi rodado desde ela
+  const k = kmStats(s);
+  let litersNow: number | null = last ? last.liters : null;
+  let estimated = false;
+  if (last && last.km != null && k.last != null && kmPerL && k.last > last.km) {
+    litersNow = Math.max(0, last.liters - (k.last - last.km) / kmPerL);
+    estimated = true;
+  }
+
+  // queda de consumo: último trecho (≥ 80 km) contra a média dos anteriores
+  const valid = segs.filter((x) => x.km >= 80);
+  const lastSeg = valid.at(-1) ?? null;
+  const before = valid.slice(0, -1).slice(-6);
+  const avgBefore = before.length >= 2 ? averageKmPerLiter(before) : null;
+  const drop = lastSeg && avgBefore ? (avgBefore - lastSeg.kmPerLiter) / avgBefore : null;
+
   return {
     fills,
     level: last ? { bars: last.bars, liters: last.liters, date: last.date, km: last.km } : null,
-    kmPerL: averageKmPerLiter(segs),
+    litersNow, estimated,
+    kmPerL,
     segments: segs,
     liters, spent,
     avgPrice: liters > 0 ? spent / liters : null,
-    priceSeries: fills.map((f) => ({ date: f.date, value: f.fuel!.price })),
+    priceSeries: fills.map((f) => ({ date: f.date, value: f.fuel!.price, type: f.fuel!.fuelType })),
     kmlSeries: segs.map((x) => ({ date: String(x.toKm), value: x.kmPerLiter })),
-    autonomyKm: last && segs.length ? last.liters * (averageKmPerLiter(segs) ?? 0) : null,
+    autonomyKm: litersNow != null && kmPerL ? litersNow * kmPerL : null,
+    byType,
+    drop: drop != null ? { pct: drop, last: lastSeg!.kmPerLiter, avg: avgBefore!, toKm: lastSeg!.toKm } : null,
   };
 }
+const emptyType = (): TypeStats => ({ kmPerL: null, km: 0, liters: 0, avgPrice: null, lastPrice: null, fills: 0 });
 
 export function oilStatus(s: Store) {
+  const item = oilPlanItem(s);
+  const k = kmStats(s);
+  if (item) {
+    const p = planStatus(s, item, k);
+    if (p.lastKm == null || p.dueKm == null) return null;
+    return { lastKm: p.lastKm, lastDate: p.lastDate ?? "", nextKm: p.dueKm, leftKm: p.kmLeft, interval: item.intervalKm ?? s.settings.oilIntervalKm, fromPlan: true };
+  }
   const oilCat = s.categories.find((c) => c.slug === "oleo")?.id;
   const last = s.expenses.find((e) => e.km != null && (e.categoryId === oilCat || /[óo]leo/i.test(e.maint?.service ?? "") || /[óo]leo/i.test(e.note ?? "")));
   if (!last) return null;
-  const k = kmStats(s);
   const nextKm = (last.km as number) + s.settings.oilIntervalKm;
-  return { lastKm: last.km as number, lastDate: last.date, nextKm, leftKm: k.last != null ? nextKm - k.last : null };
+  return { lastKm: last.km as number, lastDate: last.date, nextKm, leftKm: k.last != null ? nextKm - k.last : null, interval: s.settings.oilIntervalKm, fromPlan: false };
 }
 
 export type Upcoming = { id: string; title: string; detail: string | null; dueDate: string | null; dueKm: number | null;
-  days: number | null; kmLeft: number | null; tone: "danger" | "warn" | "ok"; kind: string; source: "evento" | "parcela" | "oleo" };
+  days: number | null; kmLeft: number | null; tone: "danger" | "warn" | "ok"; kind: string;
+  source: "evento" | "parcela" | "oleo" | "plano" | "multa" | "pneu"; href: string };
 
 export function upcoming(s: Store): Upcoming[] {
   const today = todayISO();
@@ -199,21 +236,42 @@ export function upcoming(s: Store): Upcoming[] {
   const out: Upcoming[] = s.events.filter((e) => !e.doneAt).map((e) => {
     const days = e.dueDate ? daysUntil(e.dueDate, today) : null;
     const kmLeft = e.dueKm != null && k.last != null ? e.dueKm - k.last : null;
-    return { id: e.id, title: e.title, detail: e.note, dueDate: e.dueDate, dueKm: e.dueKm, days, kmLeft, tone: tone(days, kmLeft), kind: e.kind, source: "evento" as const };
+    return { id: e.id, title: e.title, detail: e.note, dueDate: e.dueDate, dueKm: e.dueKm, days, kmLeft, tone: tone(days, kmLeft), kind: e.kind, source: "evento" as const, href: "/agenda" };
   });
   const inst = installmentsSummary(s);
   if (inst.next) {
     const days = daysUntil(inst.next.dueDate, today);
     out.push({ id: inst.next.id, title: `Parcela ${inst.next.number}`, detail: `R$ ${inst.next.amount.toLocaleString("pt-BR")}`,
-      dueDate: inst.next.dueDate, dueKm: null, days, kmLeft: null, tone: tone(days, null), kind: "parcela", source: "parcela" });
+      dueDate: inst.next.dueDate, dueKm: null, days, kmLeft: null, tone: tone(days, null), kind: "parcela", source: "parcela", href: "/parcelas" });
+  }
+  // plano de revisão (só itens já registrados alguma vez)
+  for (const p of planStatuses(s, k)) {
+    if (!p.known || (p.dueKm == null && p.dueDate == null)) continue;
+    out.push({ id: `plano-${p.item.id}`, title: p.item.name, detail: "plano de revisão", dueDate: p.dueDate, dueKm: p.dueKm,
+      days: p.daysLeft, kmLeft: p.kmLeft, tone: p.tone === "info" ? "ok" : p.tone, kind: p.item.categorySlug === "oleo" ? "oleo" : "revisao", source: "plano", href: "/manutencao?t=plano" });
   }
   const oil = oilStatus(s);
-  if (oil && !s.events.some((e) => !e.doneAt && e.kind === "oleo")) {
-    out.push({ id: "oleo", title: "Troca de óleo", detail: `a cada ${s.settings.oilIntervalKm.toLocaleString("pt-BR")} km`,
-      dueDate: null, dueKm: oil.nextKm, days: null, kmLeft: oil.leftKm, tone: tone(null, oil.leftKm), kind: "oleo", source: "oleo" });
+  if (oil && !oil.fromPlan && !s.events.some((e) => !e.doneAt && e.kind === "oleo")) {
+    out.push({ id: "oleo", title: "Troca de óleo", detail: `a cada ${oil.interval.toLocaleString("pt-BR")} km`,
+      dueDate: null, dueKm: oil.nextKm, days: null, kmLeft: oil.leftKm, tone: tone(null, oil.leftKm), kind: "oleo", source: "oleo", href: "/manutencao" });
+  }
+  for (const f of s.fines) {
+    if ((f.status !== "aberta" && f.status !== "recurso") || !f.dueDate) continue;
+    const days = daysUntil(f.dueDate, today);
+    out.push({ id: `multa-${f.id}`, title: `Multa: ${f.description}`, detail: f.status === "recurso" ? "prazo do recurso" : "prazo para pagar",
+      dueDate: f.dueDate, dueKm: null, days, kmLeft: null, tone: tone(days, null), kind: "multa", source: "multa", href: "/multas" });
+  }
+  const t = tireStatus(s, k);
+  if (t.rotation.nextKm != null) {
+    out.push({ id: "pneu-rodizio", title: "Rodízio dos pneus", detail: `a cada ${s.settings.tireRotationKm.toLocaleString("pt-BR")} km`,
+      dueDate: null, dueKm: t.rotation.nextKm, days: null, kmLeft: t.rotation.kmLeft, tone: tone(null, t.rotation.kmLeft), kind: "pneus", source: "pneu", href: "/manutencao?t=pneus" });
   }
   const rank = (u: Upcoming) => (u.tone === "danger" ? 0 : u.tone === "warn" ? 1 : 2);
-  return out.sort((a, b) => rank(a) - rank(b) || (a.days ?? (a.kmLeft ?? 1e9) / 40) - (b.days ?? (b.kmLeft ?? 1e9) / 40));
+  const eta = (u: Upcoming) => {
+    const byKm = u.kmLeft != null ? (k.perDay ? u.kmLeft / k.perDay : u.kmLeft / 40) : null;
+    return Math.min(u.days ?? 1e9, byKm ?? 1e9);
+  };
+  return out.sort((a, b) => rank(a) - rank(b) || eta(a) - eta(b));
 }
 
 export type Alert = { id: string; tone: "danger" | "warn" | "info" | "ok"; icon: string; title: string; detail: string; href: string };
@@ -228,9 +286,27 @@ export function alerts(s: Store): Alert[] {
     if (u.tone === "ok" || (u.source === "parcela" && inst.overdue.length)) continue;
     const when = u.days != null ? (u.days < 0 ? `venceu há ${-u.days} ${-u.days === 1 ? "dia" : "dias"}` : u.days === 0 ? "vence hoje" : `vence em ${u.days} ${u.days === 1 ? "dia" : "dias"}`)
       : u.kmLeft != null ? (u.kmLeft < 0 ? `passou ${Math.abs(u.kmLeft).toLocaleString("pt-BR")} km` : `faltam ${u.kmLeft.toLocaleString("pt-BR")} km`) : "";
-    out.push({ id: `u-${u.id}`, tone: u.tone, icon: u.kind === "parcela" ? "receipt" : u.kind === "oleo" ? "oil" : "calendar",
-      title: u.title, detail: when, href: u.source === "parcela" ? "/parcelas" : "/agenda" });
+    out.push({ id: `u-${u.id}`, tone: u.tone, icon: u.kind === "parcela" ? "receipt" : u.kind === "oleo" ? "oil" : u.kind === "multa" ? "alert" : u.kind === "pneus" ? "tire" : u.source === "plano" ? "wrench" : "calendar",
+      title: u.title, detail: when, href: u.href });
   }
+  for (const b of categoryBudgets(s)) {
+    if (b.tone === "ok") continue;
+    out.push({ id: `cb-${b.cat.id}`, tone: b.tone, icon: b.cat.icon, href: "/planejamento",
+      title: b.tone === "danger" ? `${b.cat.name}: orçamento estourado` : `${b.cat.name}: ${Math.round(b.pct * 100)}% do orçamento`,
+      detail: b.tone === "danger" ? `R$ ${Math.round(b.spent - b.budget).toLocaleString("pt-BR")} acima` : `Restam R$ ${Math.round(b.budget - b.spent).toLocaleString("pt-BR")}` });
+  }
+  for (const i of s.issues) {
+    if (i.resolvedOn || i.severity !== "alta") continue;
+    out.push({ id: `pb-${i.id}`, tone: "warn", icon: "alert", href: "/manutencao?t=problemas", title: i.title, detail: "Problema em aberto" });
+  }
+  const tires = tireStatus(s);
+  if (tires.pressure.daysLeft != null && tires.pressure.daysLeft < 0) out.push({ id: "calib", tone: "info", icon: "tire", href: "/manutencao?t=pneus",
+    title: "Calibrar os pneus", detail: `Última calibragem há ${-tires.pressure.daysLeft + s.settings.tirePressureDays} dias` });
+  if (tires.wearPct != null && tires.wearPct >= 0.9) out.push({ id: "desgaste", tone: "warn", icon: "tire", href: "/manutencao?t=pneus",
+    title: "Pneus perto do fim", detail: `${Math.round(tires.wearPct * 100)}% da vida útil estimada` });
+  const fp = finePoints(s);
+  if (fp.points > 0 && fp.pct >= 0.75) out.push({ id: "cnh", tone: fp.pct >= 1 ? "danger" : "warn", icon: "badge", href: "/multas",
+    title: `${fp.points} pontos na CNH`, detail: `Limite de ${fp.limit} em 12 meses` });
   const m = monthOverview(s);
   if (m.budget && m.budgetPct != null) {
     if (m.budgetPct >= 1) out.push({ id: "orc", tone: "danger", icon: "wallet", href: "/gastos", title: "Orçamento do mês estourado",
@@ -246,8 +322,11 @@ export function alerts(s: Store): Alert[] {
     }
   }
   const f = fuelStats(s);
-  if (f.level && f.level.bars <= 1.5) out.push({ id: "reserva", tone: "warn", icon: "fuel", href: "/combustivel/novo",
-    title: "Tanque na reserva", detail: `Cerca de ${Math.round(f.level.liters)} L no tanque` });
+  const reserveL = (1.5 / s.vehicle.bars) * s.vehicle.tankL;
+  if (f.litersNow != null && f.litersNow <= reserveL) out.push({ id: "reserva", tone: "warn", icon: "fuel", href: "/combustivel/novo",
+    title: f.estimated ? "Tanque deve estar na reserva" : "Tanque na reserva", detail: `Cerca de ${Math.round(f.litersNow)} L no tanque` });
+  if (s.settings.consumptionAlert && f.drop && f.drop.pct * 100 >= s.settings.consumptionDropPct) out.push({ id: `consumo-${f.drop.toKm}`, tone: "warn", icon: "trendDown", href: "/combustivel",
+    title: `Consumo caiu ${Math.round(f.drop.pct * 100)}%`, detail: `${f.drop.last.toFixed(1).replace(".", ",")} km/l (média ${f.drop.avg.toFixed(1).replace(".", ",")}). Confira pneus e filtros` });
   if (!s.odometer.length) out.push({ id: "km", tone: "info", icon: "gauge", href: "/combustivel/nivel",
     title: "Informe a quilometragem", detail: "Libera custo por km e lembretes por km" });
   if (!out.length) out.push({ id: "ok", tone: "ok", icon: "check", href: "/agenda", title: "Tudo em dia", detail: "Nenhuma pendência agora" });

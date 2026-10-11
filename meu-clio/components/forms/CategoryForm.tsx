@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { saveCategory, type ActionResult } from "@/lib/actions";
 import { CATEGORY_ICONS, Icon } from "@/components/ui/Icon";
 import { CatIcon } from "@/components/ui/kit";
-import { SubmitButton, useActionFeedback } from "@/components/ui/client";
+import { SubmitButton, useFormAction } from "@/components/ui/client";
 
 export const PALETTE = ["#6ef095", "#5ff0c8", "#5cd6ff", "#7aa7ff", "#8fb8ff", "#b49cff", "#ff8fd1", "#ff6b8a", "#ff5a4e",
   "#ff8a5c", "#ffb347", "#ffc35a", "#e8d66f", "#c4f25a", "#79e0a8", "#4fd1c5", "#9aa8c7", "#a9b8ae"];
@@ -17,8 +17,7 @@ export const GROUPS = [
 export type CategoryInitial = { id?: string; name?: string; icon?: string; color?: string; group?: string };
 
 export function CategoryForm({ initial, onDone }: { initial?: CategoryInitial; onDone?: () => void }) {
-  const [state, action, pending] = useActionState<ActionResult, FormData>(saveCategory, {});
-  useActionFeedback(state, () => onDone?.());
+  const [state, action, pending] = useFormAction(saveCategory, () => onDone?.());
   const [name, setName] = useState(initial?.name ?? "");
   const [icon, setIcon] = useState(initial?.icon ?? "tag");
   const [color, setColor] = useState(initial?.color ?? PALETTE[2]);

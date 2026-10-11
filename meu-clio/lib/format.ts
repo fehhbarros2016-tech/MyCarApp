@@ -80,3 +80,17 @@ export function parseIntLoose(v: FormDataEntryValue | null | undefined): number 
   return s ? Number(s) : undefined;
 }
 export const isISODate = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+/** Idade legível: "12 dias", "5 meses", "1 ano e 3 meses". */
+export function ageLabel(fromISO: string, today = todayISO()): string {
+  const days = Math.max(0, daysUntil(today, fromISO));
+  if (days < 45) return `${days} ${days === 1 ? "dia" : "dias"}`;
+  const months = Math.floor(days / 30.4375);
+  const y = Math.floor(months / 12), m = months % 12;
+  if (!y) return `${m} ${m === 1 ? "mês" : "meses"}`;
+  return `${y} ${y === 1 ? "ano" : "anos"}${m ? ` e ${m} ${m === 1 ? "mês" : "meses"}` : ""}`;
+}
+/** "mar/2027" */
+export const monthYear = (iso: string) => `${MONTHS[Number(iso.slice(5, 7)) - 1]}/${iso.slice(0, 4)}`;
+/** Data daqui a N dias. */
+export const addDaysISO = (iso: string, n: number) => new Date(Date.parse(iso + "T12:00:00Z") + n * 86_400_000).toISOString().slice(0, 10);

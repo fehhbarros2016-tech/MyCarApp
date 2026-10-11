@@ -6,6 +6,7 @@ import { z } from "zod";
 import { estimateFill, litersFromBars } from "@/lib/fuel";
 import { db } from "@/lib/supabase/server";
 import { parseMoney } from "@/lib/format";
+import { activeVehicle, isUuid } from "@/lib/server-utils";
 
 export type FormState = { error?: string; field?: string };
 
@@ -22,9 +23,7 @@ const decimal = (v: FormDataEntryValue | null) => {
 };
 
 async function getActiveVehicle() {
-  const { data } = await db().from("vehicles").select("id,tank_capacity_l,gauge_bars")
-    .is("archived_at", null).order("created_at").limit(1).maybeSingle();
-  return data ? { id: data.id as string, tank: { capacity: Number(data.tank_capacity_l), bars: Number(data.gauge_bars) } } : null;
+  try { return await activeVehicle(); } catch { return null; }
 }
 const int = (v: FormDataEntryValue | null) => {
   const s = String(v ?? "").replace(/\D/g, "");
@@ -72,13 +71,15 @@ export async function saveFill(_: FormState, form: FormData): Promise<FormState>
     return { error: msg, field: est.reason === "valor_invalido" ? "amount" : "gauge" };
   }
 
-  const { error } = await db().rpc("save_fuel_fill", {
+  const { data: expId, error } = await db().rpc("save_fuel_fill", {
     p_vehicle: v.id, p_date: d.date, p_km: d.km, p_amount: d.amount,
     p_liters: Math.round(est.liters * 1000) / 1000, p_price: Math.round(est.pricePerLiter * 1000) / 1000,
     p_source: est.source, p_fuel_type: d.fuelType, p_bars_before: d.before, p_bars_after: d.after,
     p_vendor: d.vendor ?? null, p_note: null,
   });
   if (error) return { error: "Não consegui salvar. Nada foi gravado; tente de novo." };
+  const trip = String(form.get("trip") ?? "");
+  if (isUuid(trip) && typeof expId === "string") await db().from("expenses").update({ trip_id: trip }).eq("id", expId);
 
   revalidatePath("/", "layout");
   redirect("/combustivel?salvo=1");

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useActionState, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon";
 import type { ActionResult } from "@/lib/actions";
@@ -49,15 +49,32 @@ export function useActionFeedback(state: ActionResult, onOk?: (s: ActionResult) 
   }, [state.at]);
 }
 
+/**
+ * Formulário com server action. O aviso (toast) sai daqui, antes da tela atualizar: assim ele aparece
+ * mesmo quando o botão que abriu o formulário some depois de salvar (ex.: a lista muda).
+ */
+export function useFormAction(fn: (s: ActionResult, f: FormData) => Promise<ActionResult>, onOk?: (r: ActionResult) => void) {
+  const toast = useToast();
+  const ok = useRef(onOk);
+  ok.current = onOk;
+  return useActionState<ActionResult, FormData>(async (prev, fd) => {
+    let r: ActionResult;
+    try { r = await fn(prev, fd); }
+    catch { r = { ok: false, error: "Sem conexão. Tente de novo.", at: Date.now() }; }
+    if (r.ok) { if (r.msg) toast(r.msg); ok.current?.(r); }
+    return r;
+  }, {});
+}
+
 /** Executa uma action direta (sem formulário) com toast. */
 export function useRun() {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  const run = useCallback(async (fn: () => Promise<ActionResult>, opts?: { undo?: () => Promise<ActionResult> }) => {
+  const run = useCallback(async (fn: () => Promise<ActionResult>, opts?: { undo?: (done: ActionResult) => Promise<ActionResult> }) => {
     setBusy(true);
     try {
       const r = await fn();
-      if (r.ok) toast(r.msg ?? "Pronto", opts?.undo ? { action: { label: "Desfazer", run: () => { void opts.undo!().then((u) => u.ok && toast("Desfeito")); } } } : undefined);
+      if (r.ok) toast(r.msg ?? "Pronto", opts?.undo ? { action: { label: "Desfazer", run: () => { void opts.undo!(r).then((u) => u.ok && toast("Desfeito")); } } } : undefined);
       else toast(r.error ?? "Algo deu errado", { tone: "error" });
       return r;
     } catch {

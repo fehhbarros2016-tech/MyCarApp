@@ -10,7 +10,7 @@ const PAGES = ['/', '/gastos', '/gastos/rapidos', '/buscar?q=comb', '/combustive
 (async () => {
   const br = await chromium.launch();
   const ctx = await br.newContext({ viewport: { width, height: 860 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true,
-    extraHTTPHeaders: { 'x-vercel-protection-bypass': BYPASS, 'x-vercel-set-bypass-cookie': 'true' } });
+    extraHTTPHeaders: BYPASS ? { 'x-vercel-protection-bypass': BYPASS, 'x-vercel-set-bypass-cookie': 'true' } : {} });
   const p = await ctx.newPage();
   const errs = []; const cons = [];
   p.on('pageerror', (e) => errs.push(e.message.slice(0, 160)));

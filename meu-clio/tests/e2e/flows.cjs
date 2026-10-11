@@ -6,7 +6,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAIAAAAuKetIAAAYKklEQVR
 (async () => {
   const br = await chromium.launch();
   const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true,
-    extraHTTPHeaders: { 'x-vercel-protection-bypass': process.env.BYPASS } });
+    extraHTTPHeaders: process.env.BYPASS ? { 'x-vercel-protection-bypass': process.env.BYPASS } : {} });
   const p = await ctx.newPage();
   const errs = [];
   p.on('pageerror', (e) => errs.push(e.message.slice(0, 150)));

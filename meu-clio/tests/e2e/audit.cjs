@@ -5,7 +5,7 @@ const [width, theme, ...paths] = process.argv.slice(2);
 (async () => {
   const br = await chromium.launch();
   const ctx = await br.newContext({ viewport: { width: Number(width), height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true,
-    extraHTTPHeaders: { 'x-vercel-protection-bypass': process.env.BYPASS } });
+    extraHTTPHeaders: process.env.BYPASS ? { 'x-vercel-protection-bypass': process.env.BYPASS } : {} });
   const p = await ctx.newPage();
   await p.goto(process.env.BASE + '/bem-vindo');
   if (p.url().includes('bem-vindo')) { await p.fill('#name', process.env.NAME || 'Felipe'); await p.fill('#key', process.env.KEY); await p.keyboard.press('Enter'); await p.waitForURL((u) => !String(u).includes('bem-vindo')); }

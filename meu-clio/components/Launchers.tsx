@@ -11,27 +11,26 @@ import type { InfoFields, IssueInitial, PartInitial, PlanInitial, ShopInitial, T
 import type { AnnualInitial, FavInitial, FineInitial, RecInitial, TripInitial } from "@/components/forms/MoneyForms";
 
 const Loading = () => <div className="form-skel"><i /><i /><i /></div>;
-const opt = { loading: Loading };
-const ExpenseForm = dynamic(() => import("@/components/forms/ExpenseForm").then((m) => m.ExpenseForm), opt);
-const MaintenanceForm = dynamic(() => import("@/components/forms/MaintenanceForm").then((m) => m.MaintenanceForm), opt);
-const EventForm = dynamic(() => import("@/components/forms/EventForm").then((m) => m.EventForm), opt);
-const CategoryForm = dynamic(() => import("@/components/forms/CategoryForm").then((m) => m.CategoryForm), opt);
-const PlanForm = dynamic(() => import("@/components/forms/InstallmentForms").then((m) => m.PlanForm), opt);
-const AddInstallmentsForm = dynamic(() => import("@/components/forms/InstallmentForms").then((m) => m.AddInstallmentsForm), opt);
-const OdometerForm = dynamic(() => import("@/components/QuickAdd").then((m) => m.OdometerForm), opt);
-const IssueForm = dynamic(() => import("@/components/forms/CarForms").then((m) => m.IssueForm), opt);
-const ResolveIssueForm = dynamic(() => import("@/components/forms/CarForms").then((m) => m.ResolveIssueForm), opt);
-const TireForm = dynamic(() => import("@/components/forms/CarForms").then((m) => m.TireForm), opt);
-const PlanItemForm = dynamic(() => import("@/components/forms/CarForms").then((m) => m.PlanItemForm), opt);
-const PartForm = dynamic(() => import("@/components/forms/CarForms").then((m) => m.PartForm), opt);
-const ShopForm = dynamic(() => import("@/components/forms/CarForms").then((m) => m.ShopForm), opt);
-const AddVehicleForm = dynamic(() => import("@/components/forms/CarForms").then((m) => m.AddVehicleForm), opt);
-const VehicleInfoForm = dynamic(() => import("@/components/forms/CarForms").then((m) => m.VehicleInfoForm), opt);
-const FineForm = dynamic(() => import("@/components/forms/MoneyForms").then((m) => m.FineForm), opt);
-const TripForm = dynamic(() => import("@/components/forms/MoneyForms").then((m) => m.TripForm), opt);
-const AnnualForm = dynamic(() => import("@/components/forms/MoneyForms").then((m) => m.AnnualForm), opt);
-const FavoriteForm = dynamic(() => import("@/components/forms/MoneyForms").then((m) => m.FavoriteForm), opt);
-const RecurringForm = dynamic(() => import("@/components/forms/MoneyForms").then((m) => m.RecurringForm), opt);
+const ExpenseForm = dynamic(() => import("@/components/forms/ExpenseForm").then((m) => m.ExpenseForm), { loading: Loading });
+const MaintenanceForm = dynamic(() => import("@/components/forms/MaintenanceForm").then((m) => m.MaintenanceForm), { loading: Loading });
+const EventForm = dynamic(() => import("@/components/forms/EventForm").then((m) => m.EventForm), { loading: Loading });
+const CategoryForm = dynamic(() => import("@/components/forms/CategoryForm").then((m) => m.CategoryForm), { loading: Loading });
+const PlanForm = dynamic(() => import("@/components/forms/InstallmentForms").then((m) => m.PlanForm), { loading: Loading });
+const AddInstallmentsForm = dynamic(() => import("@/components/forms/InstallmentForms").then((m) => m.AddInstallmentsForm), { loading: Loading });
+const OdometerForm = dynamic(() => import("@/components/QuickAdd").then((m) => m.OdometerForm), { loading: Loading });
+const IssueForm = dynamic(() => import("@/components/forms/CarForms").then((m) => m.IssueForm), { loading: Loading });
+const ResolveIssueForm = dynamic(() => import("@/components/forms/CarForms").then((m) => m.ResolveIssueForm), { loading: Loading });
+const TireForm = dynamic(() => import("@/components/forms/CarForms").then((m) => m.TireForm), { loading: Loading });
+const PlanItemForm = dynamic(() => import("@/components/forms/CarForms").then((m) => m.PlanItemForm), { loading: Loading });
+const PartForm = dynamic(() => import("@/components/forms/CarForms").then((m) => m.PartForm), { loading: Loading });
+const ShopForm = dynamic(() => import("@/components/forms/CarForms").then((m) => m.ShopForm), { loading: Loading });
+const AddVehicleForm = dynamic(() => import("@/components/forms/CarForms").then((m) => m.AddVehicleForm), { loading: Loading });
+const VehicleInfoForm = dynamic(() => import("@/components/forms/CarForms").then((m) => m.VehicleInfoForm), { loading: Loading });
+const FineForm = dynamic(() => import("@/components/forms/MoneyForms").then((m) => m.FineForm), { loading: Loading });
+const TripForm = dynamic(() => import("@/components/forms/MoneyForms").then((m) => m.TripForm), { loading: Loading });
+const AnnualForm = dynamic(() => import("@/components/forms/MoneyForms").then((m) => m.AnnualForm), { loading: Loading });
+const FavoriteForm = dynamic(() => import("@/components/forms/MoneyForms").then((m) => m.FavoriteForm), { loading: Loading });
+const RecurringForm = dynamic(() => import("@/components/forms/MoneyForms").then((m) => m.RecurringForm), { loading: Loading });
 
 /** Botão que abre um painel com um formulário. "children" troca o conteúdo do botão (ex.: um card inteiro). */
 export function Launcher({ label, icon = "plus", title, className = "btn-primary sm", render, children, startOpen = false }: {

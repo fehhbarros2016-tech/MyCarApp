@@ -6,13 +6,13 @@ import { useMemo, useRef, useState } from "react";
 // Deslize o dedo sobre o gráfico para ver o valor de cada dia.
 const W = 340, H = 168, L = 6, R = 6, T = 14, B = 22;
 
-export function MonthChart({ cumulative, prev, budget, days, label, prevLabel }: {
-  cumulative: (number | null)[]; prev: number[]; budget: number | null; days: number; label: string; prevLabel: string;
+export function MonthChart({ cumulative, prev, budget, forecast = null, days, label, prevLabel }: {
+  cumulative: (number | null)[]; prev: number[]; budget: number | null; forecast?: number | null; days: number; label: string; prevLabel: string;
 }) {
   const [hover, setHover] = useState<number | null>(null);
   const svg = useRef<SVGSVGElement>(null);
   const lastIdx = cumulative.reduce<number>((a, v, i) => (v != null ? i : a), -1);
-  const max = Math.max(1, ...cumulative.map((v) => v ?? 0), ...prev, (budget ?? 0) * 1.02);
+  const max = Math.max(1, ...cumulative.map((v) => v ?? 0), ...prev, (budget ?? 0) * 1.02, (forecast ?? 0) * 1.02);
   const x = (i: number) => L + (i / Math.max(1, days - 1)) * (W - L - R);
   const y = (v: number) => T + (1 - v / max) * (H - T - B);
 
@@ -61,6 +61,12 @@ export function MonthChart({ cumulative, prev, budget, days, label, prevLabel }:
             <text x={W - R} y={y(budget) - 5} textAnchor="end">orçamento</text>
           </g>
         )}
+        {forecast != null && forecast > 0 && (
+          <g className="mc-fc">
+            <line x1={L} x2={W - R} y1={y(forecast)} y2={y(forecast)} />
+            <text x={L + 2} y={y(forecast) - 5}>previsto</text>
+          </g>
+        )}
         {prevLine && <path d={prevLine} className="mc-prev" pathLength={1} />}
         {area && <path d={area} fill="url(#mc-fill)" className="mc-area" />}
         {line && <path d={line} className="mc-line" pathLength={1} />}
@@ -72,7 +78,7 @@ export function MonthChart({ cumulative, prev, budget, days, label, prevLabel }:
         )}
         {ticks.map((d) => <text key={d} x={x(d - 1)} y={H - 6} textAnchor={d === 1 ? "start" : d === days ? "end" : "middle"} className="mc-tick">{d}</text>)}
       </svg>
-      <div className="mchart-legend"><span><i className="lg-cur" />{label}</span><span><i className="lg-prev" />{prevLabel}</span>{budget ? <span><i className="lg-bud" />Orçamento</span> : null}</div>
+      <div className="mchart-legend"><span><i className="lg-cur" />{label}</span><span><i className="lg-prev" />{prevLabel}</span>{forecast ? <span><i className="lg-fc" />Previsto</span> : null}{budget ? <span><i className="lg-bud" />Orçamento</span> : null}</div>
     </div>
   );
 }

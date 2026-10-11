@@ -6,10 +6,11 @@ import { CatBars, Donut } from "@/components/charts/static";
 import { FuelGauge } from "@/components/fuel/FuelGauge";
 import { ExpenseList } from "@/components/lists/ExpenseList";
 import { PrivacyToggle } from "@/components/PrefToggles";
+import { ForecastBlock } from "@/components/ForecastBlock";
 import { CountUp } from "@/components/ui/CountUp";
 import { Icon } from "@/components/ui/Icon";
 import { Bar, Card, Delta, EmptyState, Money, Ring, v } from "@/components/ui/kit";
-import { alerts, entries, fuelStats, installmentsSummary, monthOverview, totals, upcoming } from "@/lib/calc";
+import { alerts, entries, forecast, fuelStats, installmentsSummary, monthOverview, totals, upcoming } from "@/lib/calc";
 import { addMonths, brl, countdown, currentMonth, daysUntil, dec1, greeting, intf, monthLong, monthShort } from "@/lib/format";
 import { formatBars } from "@/lib/fuel";
 import { catsLite, toRows } from "@/lib/rows";
@@ -23,6 +24,7 @@ export default async function HomePage() {
   if (!s) return <NotConfigured />;
   const st = s.settings, show = st.home;
   const m = monthOverview(s);
+  const fc = forecast(s);
   const t = totals(s);
   const f = fuelStats(s);
   const inst = installmentsSummary(s);
@@ -83,13 +85,14 @@ export default async function HomePage() {
                 <Link href="/configuracoes#orcamento" className="budget-cta"><Icon name="target" size={16} />Definir orçamento</Link>
               )}
             </div>
+            <ForecastBlock f={fc} monthsSetting={st.forecastMonths} />
             {show.chart && (
-              <MonthChart cumulative={m.cumulative} prev={m.prevCumulative} budget={m.budget} days={m.days}
+              <MonthChart cumulative={m.cumulative} prev={m.prevCumulative} budget={m.budget} forecast={fc.ready ? fc.total : null} days={m.days}
                 label={monthShort(key)} prevLabel={monthShort(addMonths(key, -1))} />
             )}
             <div className="month-foot">
               <div><span>Média por dia</span><Money value={m.dailyAvg} /></div>
-              <div><span>Projeção do mês</span>{m.projection ? <Money value={m.projection} /> : <b className="muted">—</b>}</div>
+              <div><span>No ritmo atual</span>{m.projection ? <Money value={m.projection} /> : <b className="muted">—</b>}</div>
               <div><span>Maior gasto</span>{m.biggest ? <Money value={m.biggest.amount} /> : <b className="muted">—</b>}</div>
             </div>
           </Card>

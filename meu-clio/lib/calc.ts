@@ -237,8 +237,13 @@ export function alerts(s: Store): Alert[] {
       detail: `R$ ${Math.round(m.total - m.budget).toLocaleString("pt-BR")} acima do limite` });
     else if (m.budgetPct * 100 >= s.settings.budgetAlertPct) out.push({ id: "orc", tone: "warn", icon: "wallet", href: "/gastos",
       title: `${Math.round(m.budgetPct * 100)}% do orçamento usado`, detail: `Restam R$ ${Math.round(m.budget - m.total).toLocaleString("pt-BR")}` });
-    else if (m.projection && m.projection > m.budget) out.push({ id: "proj", tone: "info", icon: "trend", href: "/relatorios",
-      title: "No ritmo atual, o mês passa do orçamento", detail: `Projeção de R$ ${Math.round(m.projection).toLocaleString("pt-BR")}` });
+    else {
+      const fc = forecast(s);
+      if (fc.ready && fc.total > m.budget) out.push({ id: "prev", tone: "info", icon: "trend", href: "/",
+        title: "O previsto do mês passa do orçamento", detail: `Previsto R$ ${Math.round(fc.total).toLocaleString("pt-BR")}` });
+      else if (m.projection && m.projection > m.budget) out.push({ id: "proj", tone: "info", icon: "trend", href: "/relatorios",
+        title: "No ritmo atual, o mês passa do orçamento", detail: `Projeção de R$ ${Math.round(m.projection).toLocaleString("pt-BR")}` });
+    }
   }
   const f = fuelStats(s);
   if (f.level && f.level.bars <= 1.5) out.push({ id: "reserva", tone: "warn", icon: "fuel", href: "/combustivel/novo",
@@ -263,4 +268,78 @@ export function periodStart(period: string): string | null {
   const m = { "3m": 3, "6m": 6, "12m": 12 }[period];
   if (!m) return null;
   return addMonths(t.slice(0, 7), -(m - 1)) + "-01";
+}
+
+// ---------------- gasto previsto ----------------
+export type ForecastLine = { id: string; label: string; icon: string; color: string; amount: number;
+  basis: "parcela" | "media" | "anual" | "lembrete"; note: string };
+export type Forecast = { total: number; lines: ForecastLine[]; months: number; spent: number; remaining: number;
+  over: number; pct: number; ready: boolean };
+
+const ANNUAL = ["seguro", "ipva", "licenciamento"];
+const MONTHS_PT = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+
+/**
+ * Previsão do mês:
+ *  - parcelas: valor exato das que vencem no mês;
+ *  - gastos recorrentes: média por categoria dos últimos N meses completos (só desde o primeiro mês com registro);
+ *  - seguro, IPVA e licenciamento: só no mês em que acontecem (lembrete vencendo no mês, com o último valor pago,
+ *    ou pago no mesmo mês do ano passado). Assim um gasto anual não infla todos os meses.
+ */
+export function forecast(s: Store, key = currentMonth()): Forecast {
+  const lines: ForecastLine[] = [];
+  const firstDate = s.expenses.reduce<string | null>((m, e) => (!m || e.date < m ? e.date : m), null);
+  const firstMonth = firstDate ? monthKey(firstDate) : key;
+  const window: string[] = [];
+  for (let i = 1; i <= s.settings.forecastMonths; i++) {
+    const k = addMonths(key, -i);
+    if (k >= firstMonth) window.push(k);
+  }
+  const months = window.length;
+
+  if (s.settings.includeInstallmentsInMonth) {
+    const due = s.installments.filter((i) => monthKey(i.dueDate) === key);
+    const amount = due.reduce((a, i) => a + i.amount, 0);
+    if (amount > 0) lines.push({ id: "parcelas", label: due.length === 1 ? `Parcela ${due[0].number}` : `${due.length} parcelas`,
+      icon: INSTALLMENT_CAT.icon, color: INSTALLMENT_CAT.color, amount, basis: "parcela",
+      note: due.length === 1 ? `vence dia ${Number(due[0].dueDate.slice(8, 10))}` : "vencem neste mês" });
+  }
+
+  if (months > 0) {
+    const inWindow = new Set(window);
+    const sums = new Map<string, number>();
+    for (const e of s.expenses) {
+      if (!inWindow.has(monthKey(e.date))) continue;
+      sums.set(e.categoryId, (sums.get(e.categoryId) ?? 0) + e.amount);
+    }
+    for (const [catId, total] of sums) {
+      const cat = catOf(s, catId);
+      if (ANNUAL.includes(cat.slug)) continue;
+      const avg = total / months;
+      if (avg >= 1) lines.push({ id: cat.id, label: cat.name, icon: cat.icon, color: cat.color, amount: avg, basis: "media",
+        note: `média de ${months} ${months === 1 ? "mês" : "meses"}` });
+    }
+  }
+
+  for (const slug of ANNUAL) {
+    const cat = s.categories.find((c) => c.slug === slug);
+    if (!cat) continue;
+    const paid = s.expenses.filter((e) => e.categoryId === cat.id); // mais recentes primeiro
+    const ev = s.events.find((e) => !e.doneAt && e.kind === slug && e.dueDate && monthKey(e.dueDate) === key);
+    const alreadyThisMonth = paid.some((e) => monthKey(e.date) === key);
+    const lastYear = paid.filter((e) => monthKey(e.date) === addMonths(key, -12)).reduce((a, e) => a + e.amount, 0);
+    if (ev && paid[0] && !alreadyThisMonth) {
+      lines.push({ id: cat.id, label: cat.name, icon: cat.icon, color: cat.color, amount: paid[0].amount, basis: "lembrete",
+        note: `lembrete vence dia ${Number(ev.dueDate!.slice(8, 10))}` });
+    } else if (lastYear > 0) {
+      lines.push({ id: cat.id, label: cat.name, icon: cat.icon, color: cat.color, amount: lastYear, basis: "anual",
+        note: `pago em ${MONTHS_PT[Number(key.slice(5, 7)) - 1]} do ano passado` });
+    }
+  }
+
+  lines.sort((a, b) => b.amount - a.amount);
+  const total = lines.reduce((a, l) => a + l.amount, 0);
+  const spent = entries(s).filter((e) => monthKey(e.date) === key).reduce((a, e) => a + e.amount, 0);
+  return { total, lines, months, spent, remaining: Math.max(0, total - spent), over: Math.max(0, spent - total),
+    pct: total > 0 ? spent / total : 0, ready: total > 0 };
 }

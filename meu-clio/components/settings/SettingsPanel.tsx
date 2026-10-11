@@ -252,6 +252,10 @@ export function SettingsPanel({ settings, vehicle, name, counts, env, initialTab
             <Item icon="wallet" title="Entrada no custo total" sub="Soma o valor da entrada ao custo do carro">
               <Switch checked={st.includeDownInTotal} onChange={(v) => set("includeDownInTotal", v)} label="Entrada no custo total" />
             </Item>
+            <Item icon="sparkle" title="Gasto previsto usa a média de" sub="Meses completos considerados no previsto do início" stack>
+              <Segmented<3 | 6 | 12> value={st.forecastMonths} onChange={(v) => set("forecastMonths", v)}
+                options={[{ value: 3, label: "3 meses" }, { value: 6, label: "6 meses" }, { value: 12, label: "12 meses" }]} />
+            </Item>
             <Item icon="road" title="Custo por km" sub="Usa só os gastos de uso, sem entrada e sem parcelas" />
           </Group>
           <Group title="Sistema">

@@ -43,6 +43,7 @@ export type Settings = {
   includeInstallmentsInMonth: boolean;
   weekStart: 0 | 1;
   showCents: boolean;
+  forecastMonths: 3 | 6 | 12;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -62,6 +63,7 @@ export const DEFAULT_SETTINGS: Settings = {
   includeInstallmentsInMonth: true,
   weekStart: 1,
   showCents: false,
+  forecastMonths: 6,
 };
 
 const num = (v: unknown, d: number, min: number, max: number) =>
@@ -94,5 +96,6 @@ export function parseSettings(raw: unknown): Settings {
     includeInstallmentsInMonth: bool(r.includeInstallmentsInMonth, d.includeInstallmentsInMonth),
     weekStart: r.weekStart === 0 ? 0 : 1,
     showCents: bool(r.showCents, d.showCents),
+    forecastMonths: r.forecastMonths === 3 || r.forecastMonths === 12 ? r.forecastMonths : 6,
   };
 }

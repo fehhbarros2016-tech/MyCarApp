@@ -10,17 +10,17 @@
 .inp input{width:100%;padding:14px;border-radius:14px;border:1px solid var(--line-2);background:var(--surface);color:var(--fg);font:inherit;font-size:17px;font-variant-numeric:tabular-nums;transition:border-color .25s,background .25s;-webkit-appearance:none;appearance:none;min-height:52px}
 .inp input[data-pre]{padding-left:40px}
 .inp input[data-suf]{padding-right:44px}
-.inp input:focus{outline:none;border-color:rgba(110,240,149,.55);background:var(--surface-2)}
-.inp input[aria-invalid="true"]{border-color:rgba(255,122,110,.6)}
+.inp input:focus{outline:none;border-color:var(--accent-soft);background:var(--surface-2)}
+.inp input[aria-invalid="true"]{border-color:color-mix(in srgb,var(--danger) 60%,transparent)}
 
-.seg{display:flex;padding:4px;border-radius:14px;background:rgba(0,0,0,.18);border:1px solid var(--line);gap:2px}
+.seg{display:flex;padding:4px;border-radius:14px;background:var(--seg-bg);border:1px solid var(--line);gap:2px}
 .seg button{flex:1;padding:9px 6px;border-radius:10px;font-size:13px;color:var(--fg-2);transition:background .3s var(--ease),color .3s}
 .seg button[data-on="true"]{background:var(--surface-2);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line-2)}
 .seg button small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--fg-3);margin-top:1px}
 .seg button[data-on="true"] small{color:var(--accent)}
 
 .card{padding:18px 18px 16px;border-radius:24px;background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--line)}
-.card[data-invalid="true"]{border-color:rgba(255,122,110,.45)}
+.card[data-invalid="true"]{border-color:color-mix(in srgb,var(--danger) 45%,transparent)}
 .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);align-items:center;gap:6px;margin-top:8px}
 .read{min-width:0}
 .liters{font-weight:800;font-variation-settings:"wdth" 112;font-size:clamp(38px,12vw,54px);letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
@@ -51,3 +51,6 @@
 .more summary::-webkit-details-marker{display:none}
 .more[open] summary{margin-bottom:12px}
 .row>svg{order:2}
+.tripRow{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);font-size:14px;color:var(--fg-2)}
+.tripRow input{width:20px;height:20px;accent-color:var(--accent)}
+.tripRow b{color:var(--fg)}

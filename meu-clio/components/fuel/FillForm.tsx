@@ -10,7 +10,8 @@ const parse = (v: string) => { const n = Number(v.replace(/\./g, "").replace(","
 const L = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const R = (v: number) => "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export function FillForm({ tank, defaultBefore, lastKm, today, defaultFuel = "gasolina" }: { tank: Tank; defaultBefore: number; lastKm: number | null; today: string; defaultFuel?: string }) {
+export function FillForm({ tank, defaultBefore, lastKm, today, defaultFuel = "gasolina", trip = null }: { tank: Tank; defaultBefore: number; lastKm: number | null; today: string; defaultFuel?: string; trip?: { id: string; name: string } | null }) {
+  const [inTrip, setInTrip] = useState(Boolean(trip));
   const [state, action, pending] = useActionState<FormState, FormData>(saveFill, {});
   const [amount, setAmount] = useState("");
   const [price, setPrice] = useState("");
@@ -96,6 +97,13 @@ export function FillForm({ tank, defaultBefore, lastKm, today, defaultFuel = "ga
       <input type="hidden" name="before" value={before} />
       <input type="hidden" name="after" value={after} />
       <input type="hidden" name="fuelType" value={fuel} />
+      {trip && (
+        <label className={s.tripRow}>
+          <input type="checkbox" checked={inTrip} onChange={(e) => setInTrip(e.target.checked)} />
+          <span>Marcar na viagem <b>{trip.name}</b></span>
+        </label>
+      )}
+      {trip && inTrip && <input type="hidden" name="trip" value={trip.id} />}
       <p className={s.error} role="alert" aria-live="polite">{state.error ?? ""}</p>
       <button className={s.submit} disabled={pending}>{pending ? "Salvando" : "Salvar abastecimento"}</button>
     </form>

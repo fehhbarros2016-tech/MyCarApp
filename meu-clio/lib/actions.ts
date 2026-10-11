@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/supabase/server";
 import { SESSION_COOKIE } from "@/lib/session";
+import { isUuid, uploadImage, vehicleId } from "@/lib/server-utils";
 import { isISODate, parseIntLoose, parseMoney, todayISO } from "@/lib/format";
 import { parseSettings, type Settings } from "@/lib/settings";
 
@@ -21,24 +22,25 @@ const str = (v: FormDataEntryValue | null, max = 200) => {
 };
 const COLOR = /^#[0-9a-fA-F]{6}$/;
 
-async function vehicleId(): Promise<string> {
-  const { data, error } = await db().from("vehicles").select("id").is("archived_at", null).order("created_at").limit(1);
-  if (error || !data?.[0]) throw new Error("Nenhum veículo encontrado.");
-  return data[0].id as string;
-}
+const uuidOrNull = (v: FormDataEntryValue | null) => (isUuid(String(v ?? "")) ? String(v) : null);
+const FREQS = ["semanal", "mensal", "anual"] as const;
 
 // ---------------- gastos ----------------
 export async function saveExpense(_: ActionResult, f: FormData): Promise<ActionResult> {
   const amount = parseMoney(f.get("amount"));
-  const category = str(f.get("category"), 64);
+  const category = uuidOrNull(f.get("category"));
   const date = str(f.get("date"), 10) ?? todayISO();
   if (!amount || amount <= 0) return fail("Digite o valor.");
+  if (amount > 10_000_000) return fail("Valor alto demais.");
   if (!category) return fail("Escolha uma categoria.");
   if (!isISODate(date)) return fail("Data inválida.");
+  if (date > todayISO()) return fail("A data não pode ser no futuro.");
   const row = {
     amount, category_id: category, occurred_on: date,
     odometer: parseIntLoose(f.get("km")) ?? null,
     vendor: str(f.get("vendor"), 80), note: str(f.get("note"), 280),
+    trip_id: uuidOrNull(f.get("trip")),
+    ...(f.has("shop") ? { shop_id: uuidOrNull(f.get("shop")) } : {}),
     updated_at: new Date().toISOString(),
   };
   const id = str(f.get("id"), 64);
@@ -48,9 +50,34 @@ export async function saveExpense(_: ActionResult, f: FormData): Promise<ActionR
     if (error) return fail("Não consegui salvar. Tente de novo.");
     return done("Gasto atualizado", id);
   }
-  const { data, error } = await sb.from("expenses").insert({ ...row, vehicle_id: await vehicleId() }).select("id").single();
+  const vid = await vehicleId();
+  const repeat = String(f.get("repeat") ?? "");
+  const extras: string[] = [];
+  if (f.get("favorite") === "1") {
+    const label = (str(f.get("favLabel"), 40) ?? row.note ?? "Favorito").slice(0, 40);
+    const fav = await sb.from("expense_favorites").insert({ label, category_id: category, amount, note: row.note, vendor: row.vendor });
+    if (!fav.error) extras.push("favorito criado");
+  }
+  if ((FREQS as readonly string[]).includes(repeat)) {
+    const until = str(f.get("repeatUntil"), 10);
+    // a regra começa na data do gasto; o lançamento sai pela própria regra (assim nunca duplica)
+    const rule = await sb.from("recurring_expenses").insert({
+      vehicle_id: vid, category_id: category, amount, note: row.note, vendor: row.vendor, shop_id: row.shop_id ?? null,
+      frequency: repeat, anchor_day: Number(date.slice(8, 10)), next_date: date,
+      end_date: until && isISODate(until) && until >= date ? until : null,
+    }).select("id").single();
+    if (rule.error) return fail("Não consegui salvar a recorrência.");
+    const ran = await sb.rpc("run_recurring", { p_today: todayISO() });
+    if (ran.error) return fail("A recorrência foi criada, mas o primeiro lançamento falhou. Recarregue a página.");
+    // km, oficina e viagem valem só para este lançamento
+    if (row.odometer != null || row.trip_id) {
+      await sb.from("expenses").update({ odometer: row.odometer, trip_id: row.trip_id }).eq("recurring_id", rule.data.id).eq("occurred_on", date);
+    }
+    return done(`Gasto salvo · repete ${repeat === "semanal" ? "toda semana" : repeat === "mensal" ? "todo mês" : "todo ano"}${extras.length ? " · " + extras.join(", ") : ""}`);
+  }
+  const { data, error } = await sb.from("expenses").insert({ ...row, vehicle_id: vid }).select("id").single();
   if (error) return fail("Não consegui salvar. Tente de novo.");
-  return done("Gasto salvo", data.id);
+  return done(`Gasto salvo${extras.length ? " · " + extras.join(", ") : ""}`, data.id);
 }
 
 export async function deleteExpense(id: string): Promise<ActionResult> {
@@ -135,10 +162,15 @@ export async function saveMaintenance(_: ActionResult, f: FormData): Promise<Act
   const sb = db();
   const km = parseIntLoose(f.get("km")) ?? null;
   const nextKm = parseIntLoose(f.get("nextKm")) ?? null;
-  const category = str(f.get("category"), 64);
+  const category = uuidOrNull(f.get("category"));
+  const shop = uuidOrNull(f.get("shop"));
+  const trip = uuidOrNull(f.get("trip"));
+  const plan = uuidOrNull(f.get("plan"));
+  if (date > todayISO()) return fail("A data não pode ser no futuro.");
   if (id) {
     const [a, b] = await Promise.all([
       sb.from("expenses").update({ amount: parts + labor, occurred_on: date, odometer: km, vendor: str(f.get("vendor"), 80),
+        shop_id: shop, trip_id: trip,
         note: str(f.get("note"), 280), ...(category ? { category_id: category } : {}), updated_at: new Date().toISOString() }).eq("id", id),
       sb.from("maintenance_records").update({ system, service, parts_cost: parts, labor_cost: labor,
         next_due_date: nextDate && isISODate(nextDate) ? nextDate : null, next_due_km: nextKm }).eq("expense_id", id),
@@ -146,13 +178,14 @@ export async function saveMaintenance(_: ActionResult, f: FormData): Promise<Act
     if (a.error || b.error) return fail("Não consegui salvar.");
     return done("Manutenção atualizada", id);
   }
-  const { data, error } = await sb.rpc("save_maintenance", {
+  const { data, error } = await sb.rpc("save_maintenance_v2", {
     p_vehicle: await vehicleId(), p_date: date, p_km: km, p_category: category, p_system: system, p_service: service,
     p_parts: parts, p_labor: labor, p_vendor: str(f.get("vendor"), 80), p_note: str(f.get("note"), 280),
-    p_next_date: nextDate && isISODate(nextDate) ? nextDate : null, p_next_km: nextKm,
+    p_next_date: !plan && nextDate && isISODate(nextDate) ? nextDate : null, p_next_km: plan ? null : nextKm,
+    p_shop: shop, p_plan: plan, p_trip: trip,
   });
   if (error) return fail("Não consegui salvar. Nada foi gravado.");
-  return done(nextDate || nextKm ? "Manutenção salva e lembrete criado" : "Manutenção salva", data as string);
+  return done(plan ? "Manutenção salva e plano atualizado" : nextDate || nextKm ? "Manutenção salva e lembrete criado" : "Manutenção salva", data as string);
 }
 
 // ---------------- parcelas ----------------
@@ -265,6 +298,19 @@ export async function saveOdometer(_: ActionResult, f: FormData): Promise<Action
   return done("Quilometragem atualizada");
 }
 
+/** Some com uma leitura manual digitada errado (exclusão lógica, dá para desfazer). */
+export async function deleteOdometer(id: string): Promise<ActionResult> {
+  if (!isUuid(id)) return fail("Leitura inválida.");
+  const { error } = await db().from("odometer_readings").update({ deleted_at: new Date().toISOString() }).eq("id", id).eq("source", "manual");
+  if (error) return fail("Não consegui remover.");
+  return done("Leitura removida", id);
+}
+export async function restoreOdometer(id: string): Promise<ActionResult> {
+  const { error } = await db().from("odometer_readings").update({ deleted_at: null }).eq("id", id);
+  if (error) return fail("Não consegui desfazer.");
+  return done("Leitura restaurada", id);
+}
+
 // ---------------- perfil, veículo e preferências ----------------
 export async function saveName(_: ActionResult, f: FormData): Promise<ActionResult> {
   const name = str(f.get("name"), 40);
@@ -282,23 +328,29 @@ export async function saveVehicle(_: ActionResult, f: FormData): Promise<ActionR
   if (bars != null && (bars < 2 || bars > 20)) return fail("Barras do marcador entre 2 e 20.");
   if (year != null && (year < 1950 || year > 2100)) return fail("Ano inválido.");
   const pd = str(f.get("purchaseDate"), 10);
+  const id = uuidOrNull(f.get("id")) ?? (await vehicleId());
+  const style = f.get("photoStyle") === "foto" ? "foto" : "recorte";
+  const photo = await uploadImage(f.get("photo"), "veiculos");
+  if (photo.error) return fail(photo.error);
+  const removePhoto = f.get("removePhoto") === "1";
   const { error } = await db().from("vehicles").update({
-    name: str(f.get("name"), 40) ?? "Meu Clio",
-    hero_word: (str(f.get("heroWord"), 10) ?? "CLIO").toUpperCase(),
+    name: str(f.get("name"), 40) ?? "Meu carro",
+    hero_word: (str(f.get("heroWord"), 24) ?? "CARRO").toUpperCase(),
     make: str(f.get("make"), 40), model: str(f.get("model"), 40), plate: str(f.get("plate"), 10)?.toUpperCase() ?? null,
     year: year ?? null, initial_odometer: parseIntLoose(f.get("initialKm")) ?? null,
-    purchase_date: pd && isISODate(pd) ? pd : null,
+    purchase_date: pd && isISODate(pd) ? pd : null, photo_style: style,
+    ...(photo.path ? { image_path: photo.path } : removePhoto ? { image_path: null } : {}),
     ...(tank != null ? { tank_capacity_l: tank } : {}), ...(bars != null ? { gauge_bars: bars } : {}),
-  }).eq("id", await vehicleId());
+  }).eq("id", id);
   if (error) return fail("Não consegui salvar.");
-  return done("Veículo atualizado");
+  return done("Veículo atualizado", id);
 }
 
 export async function savePrefs(patch: Partial<Settings>): Promise<ActionResult> {
   const sb = db();
   const { data } = await sb.from("app_settings").select("prefs").eq("id", 1).maybeSingle();
   const current = parseSettings(data?.prefs);
-  const next = parseSettings({ ...current, ...patch, home: { ...current.home, ...(patch.home ?? {}) } });
+  const next = parseSettings({ ...current, ...patch, home: { ...current.home, ...(patch.home ?? {}) }, notify: { ...current.notify, ...(patch.notify ?? {}) } });
   const { error } = await sb.from("app_settings").upsert({ id: 1, prefs: next, updated_at: new Date().toISOString() });
   if (error) return fail("Não consegui salvar.");
   return done("Preferência salva");

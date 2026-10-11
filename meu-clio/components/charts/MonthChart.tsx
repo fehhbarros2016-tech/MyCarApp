@@ -53,8 +53,8 @@ export function MonthChart({ cumulative, prev, budget, forecast = null, days, la
             <stop offset="1" stopColor="var(--accent)" stopOpacity="0" />
           </linearGradient>
         </defs>
-        {[0.25, 0.5, 0.75].map((f) => <line key={f} x1={L} x2={W - R} y1={T + f * (H - T - B)} y2={T + f * (H - T - B)} stroke="rgba(200,255,215,.05)" />)}
-        <line x1={L} x2={W - R} y1={H - B + 0.5} y2={H - B + 0.5} stroke="rgba(200,255,215,.12)" />
+        {[0.25, 0.5, 0.75].map((f) => <line key={f} x1={L} x2={W - R} y1={T + f * (H - T - B)} y2={T + f * (H - T - B)} stroke="var(--chart-grid)" />)}
+        <line x1={L} x2={W - R} y1={H - B + 0.5} y2={H - B + 0.5} stroke="var(--chart-axis)" />
         {budget != null && budget > 0 && (
           <g className="mc-budget">
             <line x1={L} x2={W - R} y1={y(budget)} y2={y(budget)} />
@@ -72,7 +72,7 @@ export function MonthChart({ cumulative, prev, budget, forecast = null, days, la
         {line && <path d={line} className="mc-line" pathLength={1} />}
         {hi >= 0 && cur != null && (
           <g>
-            <line x1={x(hi)} x2={x(hi)} y1={T} y2={H - B} stroke="rgba(236,243,238,.25)" strokeDasharray="2 3" />
+            <line x1={x(hi)} x2={x(hi)} y1={T} y2={H - B} stroke="var(--chart-prev)" strokeDasharray="2 3" />
             <circle cx={x(hi)} cy={y(cur)} r={5} fill="var(--bg)" stroke="var(--accent)" strokeWidth={2.5} className="mc-dot" />
           </g>
         )}

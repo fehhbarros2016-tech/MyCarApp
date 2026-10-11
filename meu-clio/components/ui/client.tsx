@@ -53,11 +53,11 @@ export function useActionFeedback(state: ActionResult, onOk?: (s: ActionResult) 
 export function useRun() {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  const run = useCallback(async (fn: () => Promise<ActionResult>, opts?: { undo?: () => Promise<ActionResult> }) => {
+  const run = useCallback(async (fn: () => Promise<ActionResult>, opts?: { undo?: (done: ActionResult) => Promise<ActionResult> }) => {
     setBusy(true);
     try {
       const r = await fn();
-      if (r.ok) toast(r.msg ?? "Pronto", opts?.undo ? { action: { label: "Desfazer", run: () => { void opts.undo!().then((u) => u.ok && toast("Desfeito")); } } } : undefined);
+      if (r.ok) toast(r.msg ?? "Pronto", opts?.undo ? { action: { label: "Desfazer", run: () => { void opts.undo!(r).then((u) => u.ok && toast("Desfeito")); } } } : undefined);
       else toast(r.error ?? "Algo deu errado", { tone: "error" });
       return r;
     } catch {

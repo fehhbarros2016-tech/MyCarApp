@@ -20,6 +20,8 @@ export async function GET(req: NextRequest) {
     const body = JSON.stringify({
       exportado_em: new Date().toISOString(), nome: s.name, veiculo: s.vehicle, preferencias: s.settings,
       categorias: s.categories, gastos: s.expenses, parcelas: s.installments, lembretes: s.events, leituras_tanque: s.levels, hodometro: s.odometer,
+      plano: s.plan, pecas: s.parts, pneus: s.tires, problemas: s.issues, multas: s.fines, viagens: s.trips, recorrentes: s.recurring,
+      favoritos: s.favorites, oficinas: s.shops, gastos_anuais: s.annual,
     }, null, 2);
     return new NextResponse(body, { headers: { "content-type": "application/json; charset=utf-8", "content-disposition": `attachment; filename="meu-clio-backup-${stamp}.json"` } });
   }

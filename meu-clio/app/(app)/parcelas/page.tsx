@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { AddInstallmentsButton, PlanButton } from "@/components/Launchers";
 import { InstallmentList } from "@/components/lists/InstallmentList";
 import { PayNextButton } from "@/components/PayNext";
+import { PayoffSim } from "@/components/PayoffSim";
+import { payoff } from "@/lib/money";
+import { todayISO } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
 import { Bar, Card, EmptyState, Money, PageHeader, Pill, Ring, v } from "@/components/ui/kit";
 import { installmentsSummary } from "@/lib/calc";
@@ -75,7 +78,16 @@ export default async function ParcelasPage() {
         </Card>
       )}
 
-      <div className="section-h rv" style={v(4)}>
+      {i.remaining > 0 && (() => {
+        const p = payoff(s);
+        return (
+          <Card title="Simular quitação antecipada" className="rv" style={v(4)}>
+            <PayoffSim pending={p.pending.map((x) => ({ amount: x.amount, dueDate: x.dueDate }))} rate={p.rate} source={p.rateSource} today={todayISO()} />
+          </Card>
+        );
+      })()}
+
+      <div className="section-h rv" style={v(5)}>
         <h2>Todas as parcelas</h2>
         <AddInstallmentsButton defaultAmount={last?.amount ?? 0} nextDue={last ? `${addMonths(last.dueDate.slice(0, 7), 1)}-${String(Math.min(28, Number(last.dueDate.slice(8, 10)))).padStart(2, "0")}` : ""} />
       </div>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Trend } from "@/components/charts/static";
+import { DateLines, Trend } from "@/components/charts/static";
+import { EthanolCalc } from "@/components/fuel/EthanolCalc";
 import { FuelGauge } from "@/components/fuel/FuelGauge";
 import { OdometerButton } from "@/components/Launchers";
 import { ExpenseList } from "@/components/lists/ExpenseList";
@@ -9,7 +10,7 @@ import { Card, EmptyState, Money, PageHeader, v } from "@/components/ui/kit";
 import { entries, fuelStats, kmStats } from "@/lib/calc";
 import { brl, currentMonth, dateBR, dec1, intf, monthKey } from "@/lib/format";
 import { formatBars } from "@/lib/fuel";
-import { catsLite, toRows } from "@/lib/rows";
+import { catsLite, shopsLite, toRows } from "@/lib/rows";
 import { getStore } from "@/lib/store";
 
 export const metadata: Metadata = { title: "Combustível" };
@@ -37,16 +38,22 @@ export default async function FuelPage({ searchParams }: { searchParams: Promise
           <div className="tank-hero-row">
             <div className="tank-hero-read">
               <span className="eyebrow">No tanque agora</span>
-              <div className="tank-l num">{dec1(f.level.liters)}<small>L</small></div>
-              <p className="muted-s">{formatBars(f.level.bars)} de {s.vehicle.bars} barras · {Math.round((f.level.bars / s.vehicle.bars) * 100)}%</p>
-              <p className="muted-s">medido em {dateBR(f.level.date)}{f.level.km != null ? ` aos ${intf(f.level.km)} km` : ""}</p>
+              <div className="tank-l num">{dec1(f.litersNow ?? f.level.liters)}<small>L</small></div>
+              {f.estimated ? (
+                <p className="muted-s">estimado agora · marcado {formatBars(f.level.bars)} de {s.vehicle.bars} em {dateBR(f.level.date)}{f.level.km != null ? ` aos ${intf(f.level.km)} km` : ""}</p>
+              ) : (
+                <>
+                  <p className="muted-s">{formatBars(f.level.bars)} de {s.vehicle.bars} barras · {Math.round((f.level.bars / s.vehicle.bars) * 100)}%</p>
+                  <p className="muted-s">medido em {dateBR(f.level.date)}{f.level.km != null ? ` aos ${intf(f.level.km)} km` : ""}</p>
+                </>
+              )}
               {f.autonomyKm ? <p className="autonomy"><Icon name="road" size={14} /> Dá para rodar ~{intf(Math.round(f.autonomyKm))} km</p> : null}
               <div className="btn-row">
                 <Link href="/combustivel/nivel" className="btn-ghost sm"><Icon name="gauge" size={15} />Atualizar nível</Link>
-                <OdometerButton lastKm={k.last} />
+                <OdometerButton lastKm={k.last} history={s.odoManual.slice(-6).reverse().map((o) => ({ id: o.id!, date: o.date, km: o.km }))} />
               </div>
             </div>
-            <FuelGauge bars={s.vehicle.bars} value={f.level.bars} label="Último nível registrado" />
+            <FuelGauge bars={s.vehicle.bars} value={f.litersNow != null ? Math.max(0, Math.round((f.litersNow / s.vehicle.tankL) * s.vehicle.bars * 2) / 2) : f.level.bars} label={f.estimated ? "Nível estimado agora" : "Último nível registrado"} />
           </div>
         ) : <EmptyState icon="gauge" text="Marque no marcador quanto combustível tem agora. É a base para calcular os litros de cada abastecimento." cta={{ href: "/combustivel/nivel", label: "Marcar nível" }} />}
       </Card>
@@ -57,6 +64,40 @@ export default async function FuelPage({ searchParams }: { searchParams: Promise
         <div className="tile"><span className="eyebrow">Este mês</span><Money value={monthSpent} /><small>em combustível</small></div>
         <div className="tile"><span className="eyebrow">Por km</span>{f.kmPerL && f.avgPrice ? <Money value={f.avgPrice / f.kmPerL} cents /> : <b className="muted">—</b>}<small>só combustível</small></div>
       </div>
+
+      {f.drop && s.settings.consumptionAlert && f.drop.pct * 100 >= s.settings.consumptionDropPct && (
+        <div className="alert rv" data-tone="warn" style={v(2)}>
+          <span className="alert-ic"><Icon name="trendDown" size={17} /></span>
+          <span className="alert-t"><b>Consumo caiu {Math.round(f.drop.pct * 100)}% no último trecho</b>
+            <span>{dec1(f.drop.last)} km/l contra {dec1(f.drop.avg)} de média. Confira calibragem, filtro de ar e velas.</span></span>
+        </div>
+      )}
+
+      <Card title="Etanol ou gasolina?" className="rv" style={v(3)}>
+        <EthanolCalc kmlG={f.byType.gasolina.kmPerL} kmlE={f.byType.etanol.kmPerL} lastG={f.byType.gasolina.lastPrice} lastE={f.byType.etanol.lastPrice}
+          tankL={s.vehicle.tankL} kmMonth={k.perMonth} />
+      </Card>
+
+      {f.priceSeries.length >= 2 && (
+        <Card title="Preço do litro" className="rv" style={v(3)}>
+          <DateLines unit="R$/L" series={[
+            { name: "Gasolina", color: "#ffc35a", points: f.priceSeries.filter((p) => p.type === "gasolina").map((p) => ({ date: p.date, value: p.value })) },
+            { name: "Etanol", color: "#6ef095", points: f.priceSeries.filter((p) => p.type === "etanol").map((p) => ({ date: p.date, value: p.value })) },
+          ].filter((x) => x.points.length)} />
+          <div className="price-stats">
+            {(["gasolina", "etanol"] as const).filter((t) => f.byType[t].fills).map((t) => {
+              const ps = f.priceSeries.filter((p) => p.type === t).map((p) => p.value);
+              return (
+                <div key={t}>
+                  <span className="eyebrow"><i style={{ background: t === "gasolina" ? "#ffc35a" : "#6ef095" }} />{t === "gasolina" ? "Gasolina" : "Etanol"}</span>
+                  <b className="num">{brl(f.byType[t].lastPrice ?? 0, true)}</b>
+                  <small>média {brl(f.byType[t].avgPrice ?? 0, true)} · menor {brl(Math.min(...ps), true)} · maior {brl(Math.max(...ps), true)}</small>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       {f.segments.length >= 2 ? (
         <Card title="Consumo por trecho" className="rv" style={v(3)}>
@@ -70,7 +111,7 @@ export default async function FuelPage({ searchParams }: { searchParams: Promise
       )}
 
       <div className="section-h rv" style={v(4)}><h2>Abastecimentos</h2>{f.liters > 0 && <span className="muted-s">{intf(Math.round(f.liters))} L · {brl(f.spent)}</span>}</div>
-      {rows.length ? <ExpenseList rows={rows} categories={catsLite(s)} lastKm={k.last} />
+      {rows.length ? <ExpenseList rows={rows} categories={catsLite(s)} lastKm={k.last} shops={shopsLite(s)} />
         : <Card className="rv" style={v(5)}><EmptyState icon="fuel" text="Você ainda não registrou nenhum abastecimento." cta={{ href: "/combustivel/novo", label: "Adicionar abastecimento" }} /></Card>}
     </>
   );

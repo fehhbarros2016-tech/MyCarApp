@@ -6,7 +6,7 @@ import { CatBars, Donut, Trend, WeekBars } from "@/components/charts/static";
 import { Icon } from "@/components/ui/Icon";
 import { Card, CatIcon, EmptyState, Money, PageHeader, v } from "@/components/ui/kit";
 import { byCategory, entries, fuelStats, GROUP_COLOR, GROUP_LABEL, monthlySeries, periodStart, totals, weekdaySpend } from "@/lib/calc";
-import { brl, currentMonth, dateBR, daysUntil, dec1, intf, monthShort, todayISO } from "@/lib/format";
+import { addMonths, brl, currentMonth, dateBR, daysUntil, dec1, intf, monthLong, monthShort, todayISO } from "@/lib/format";
 import { getStore } from "@/lib/store";
 
 export const metadata: Metadata = { title: "Relatórios" };
@@ -44,6 +44,12 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
   return (
     <>
       <PageHeader title="Relatórios" sub="Para onde vai o dinheiro do carro." />
+      <div className="link-grid two rv" style={v(1)}>
+        <Link href={`/resumo/${addMonths(currentMonth(), -1)}`} className="settings-link"><span className="q-ic" style={{ "--c": "#5ff0c8" } as CSSProperties}><Icon name="sparkle" size={18} /></span>
+          <span><b>Resumo do mês</b><span>{monthLong(addMonths(currentMonth(), -1))}</span></span><Icon name="chevron" size={16} /></Link>
+        <Link href={`/retrospectiva/${todayISO().slice(0, 4)}`} className="settings-link"><span className="q-ic" style={{ "--c": "#ff9a5a" } as CSSProperties}><Icon name="trend" size={18} /></span>
+          <span><b>Retrospectiva</b><span>seu {todayISO().slice(0, 4)}</span></span><Icon name="chevron" size={16} /></Link>
+      </div>
       <div className="seg period rv" style={v(1)}>
         {PERIODS.map((x) => <Link key={x.v} href={`/relatorios?p=${x.v}`} data-on={p === x.v} scroll={false}>{x.l}</Link>)}
       </div>

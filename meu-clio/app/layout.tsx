@@ -1,5 +1,11 @@
 import type { Metadata, Viewport } from "next";
+import { cookies } from "next/headers";
+import type { CSSProperties } from "react";
 import "./globals.css";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
+import { DEFAULT_SETTINGS, type Settings } from "@/lib/settings";
+import { getStore } from "@/lib/store";
+import { themeVars } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: { default: "Meu Clio", template: "%s · Meu Clio" },
@@ -14,17 +20,29 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export const viewport: Viewport = {
-  themeColor: "#06110c",
-  colorScheme: "dark",
-  width: "device-width",
-  initialScale: 1,
-  viewportFit: "cover",
-};
+/** Preferências de aparência só para quem já entrou (a tela de boas-vindas fica sempre escura). */
+async function prefs(): Promise<Settings> {
+  try {
+    const ok = await verifySessionToken((await cookies()).get(SESSION_COOKIE)?.value);
+    if (!ok) return DEFAULT_SETTINGS;
+    return (await getStore())?.settings ?? DEFAULT_SETTINGS;
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export async function generateViewport(): Promise<Viewport> {
+  const st = await prefs();
+  const themeColor = st.theme === "light" ? "#eef3ef" : st.theme === "auto"
+    ? [{ media: "(prefers-color-scheme: light)", color: "#eef3ef" }, { media: "(prefers-color-scheme: dark)", color: "#06110c" }]
+    : "#06110c";
+  return { themeColor, colorScheme: st.theme === "auto" ? "light dark" : st.theme, width: "device-width", initialScale: 1, viewportFit: "cover" };
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const st = await prefs();
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" data-theme={st.theme} style={themeVars(st) as CSSProperties}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />

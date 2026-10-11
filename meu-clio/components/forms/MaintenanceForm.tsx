@@ -7,8 +7,8 @@ import { Icon } from "@/components/ui/Icon";
 import { ConfirmButton, SubmitButton, useActionFeedback, useRun } from "@/components/ui/client";
 import type { CatLite } from "./ExpenseForm";
 import { SYSTEMS } from "@/lib/constants";
+import { ShopPicker, type ShopLite } from "./ShopPicker";
 
-export { SYSTEMS } from "@/lib/constants";
 
 const QUICK = [
   { service: "Troca de óleo e filtro", system: "motor", nextKm: 10000 },
@@ -22,11 +22,12 @@ const QUICK = [
 export type MaintInitial = {
   id?: string; date?: string; km?: number | null; vendor?: string | null; note?: string | null; categoryId?: string;
   system?: string; service?: string; parts?: number; labor?: number; nextDate?: string | null; nextKm?: number | null;
+  shopId?: string | null; planId?: string | null; planName?: string | null; categorySlug?: string | null;
 };
 const fmt = (v?: number) => (v ? v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "");
 
-export function MaintenanceForm({ initial, onDone, lastKm, categories }: {
-  initial?: MaintInitial; onDone?: () => void; lastKm?: number | null; categories: CatLite[];
+export function MaintenanceForm({ initial, onDone, lastKm, categories, shops = [] }: {
+  initial?: MaintInitial; onDone?: () => void; lastKm?: number | null; categories: CatLite[]; shops?: ShopLite[];
 }) {
   const [state, action, pending] = useActionState<ActionResult, FormData>(saveMaintenance, {});
   useActionFeedback(state, () => onDone?.());
@@ -40,7 +41,8 @@ export function MaintenanceForm({ initial, onDone, lastKm, categories }: {
   const [labor, setLabor] = useState(fmt(initial?.labor));
   const editing = Boolean(initial?.id);
   const maintCats = categories.filter((c) => !c.archived && ["manutencao", "oleo", "revisao", "pecas", "alinhamento", "pneus"].includes(c.slug));
-  const [cat, setCat] = useState(initial?.categoryId ?? maintCats.find((c) => c.slug === "manutencao")?.id ?? "");
+  const [cat, setCat] = useState(initial?.categoryId ?? maintCats.find((c) => c.slug === (initial?.categorySlug ?? "manutencao"))?.id ?? maintCats.find((c) => c.slug === "manutencao")?.id ?? "");
+  const fromPlan = Boolean(initial?.planId && !initial?.id);
   const total = (Number(parts.replace(/\./g, "").replace(",", ".")) || 0) + (Number(labor.replace(/\./g, "").replace(",", ".")) || 0);
 
   const applyQuick = (q: (typeof QUICK)[number]) => {
@@ -56,7 +58,9 @@ export function MaintenanceForm({ initial, onDone, lastKm, categories }: {
   return (
     <form action={action} className="form" noValidate>
       {initial?.id && <input type="hidden" name="id" value={initial.id} />}
-      {!editing && (
+      {initial?.planId && !editing && <input type="hidden" name="plan" value={initial.planId} />}
+      {fromPlan && <p className="sheet-note"><Icon name="check" size={15} /> Ao salvar, o item &quot;{initial?.planName}&quot; do plano de revisão é atualizado.</p>}
+      {!editing && !fromPlan && (
         <div className="chips-scroll" aria-label="Serviços comuns">
           {QUICK.map((q) => <button key={q.service} type="button" className="chip" onClick={() => applyQuick(q)}>{q.service}</button>)}
         </div>
@@ -101,10 +105,9 @@ export function MaintenanceForm({ initial, onDone, lastKm, categories }: {
         <label className="field"><span className="lbl">Km do painel</span>
           <input className="inp" name="km" inputMode="numeric" value={km} onChange={(e) => setKm(e.target.value)} placeholder={lastKm ? lastKm.toLocaleString("pt-BR") : "opcional"} /></label>
       </div>
-      <label className="field"><span className="lbl">Oficina</span>
-        <input className="inp" name="vendor" defaultValue={initial?.vendor ?? ""} placeholder="opcional" maxLength={80} /></label>
+      <ShopPicker shops={shops} value={initial?.shopId ?? null} />
 
-      <fieldset className="next-box">
+      {!fromPlan && <fieldset className="next-box">
         <legend><Icon name="bell" size={15} /> Próxima vez (cria um lembrete)</legend>
         <div className="row2">
           <label className="field"><span className="lbl">No km</span>
@@ -112,7 +115,7 @@ export function MaintenanceForm({ initial, onDone, lastKm, categories }: {
           <label className="field"><span className="lbl">Na data</span>
             <input className="inp" type="date" name="nextDate" value={nextDate} onChange={(e) => setNextDate(e.target.value)} /></label>
         </div>
-      </fieldset>
+      </fieldset>}
       <label className="field"><span className="lbl">Observação</span>
         <input className="inp" name="note" defaultValue={initial?.note ?? ""} placeholder="opcional" maxLength={280} /></label>
 

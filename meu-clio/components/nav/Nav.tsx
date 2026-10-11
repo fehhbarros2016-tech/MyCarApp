@@ -21,16 +21,23 @@ const SIDE: Route[] = [
   { href: "/combustivel", label: "Combustível", icon: "fuel" },
   { href: "/manutencao", label: "Manutenção", icon: "wrench" },
   { href: "/parcelas", label: "Parcelas", icon: "receipt" },
+  { href: "/planejamento", label: "Planejamento", icon: "target" },
   { href: "/agenda", label: "Agenda", icon: "calendar" },
+  { href: "/viagens", label: "Viagens", icon: "map" },
+  { href: "/multas", label: "Multas", icon: "alert" },
+  { href: "/carro", label: "Ficha do carro", icon: "car" },
+  { href: "/linha-do-tempo", label: "Linha do tempo", icon: "clock" },
   { href: "/relatorios", label: "Relatórios", icon: "chart" },
 ];
-const MORE = ["/mais", "/parcelas", "/manutencao", "/agenda", "/configuracoes"];
+const MORE = ["/mais", "/parcelas", "/manutencao", "/agenda", "/configuracoes", "/planejamento", "/viagens", "/multas", "/carro",
+  "/linha-do-tempo", "/resumo", "/retrospectiva", "/buscar"];
 
 function tabIndex(path: string) {
   if (path === "/") return 0;
-  if (path.startsWith("/gastos")) return 1;
+  if (path.startsWith("/gastos") || path.startsWith("/buscar")) return 1;
   if (path.startsWith("/combustivel")) return 2;
   if (path.startsWith("/relatorios")) return 3;
+  if (path.startsWith("/resumo") || path.startsWith("/retrospectiva")) return 3;
   if (MORE.some((p) => path.startsWith(p))) return 4;
   return -1;
 }
@@ -103,15 +110,16 @@ export function TabBar({ alerts = 0 }: { alerts?: number }) {
   );
 }
 
-export function Sidebar({ name }: { name: string | null }) {
+export function Sidebar({ name, car, version }: { name: string | null; car: string | null; version: string }) {
   const path = usePathname();
   const on = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
   return (
     <nav className="side" aria-label="Navegação">
       <div className="brand">
         <Image src="/icons/icon-192.png" alt="" width={30} height={30} />
-        <b>MEU CLIO</b>
+        <span><b>{(car ?? "Meu Clio").toUpperCase()}</b><small>{version}</small></span>
       </div>
+      <Link href="/buscar" className="side-search"><Icon name="search" size={16} /> Buscar</Link>
       {SIDE.map((r) => (
         <Link key={r.href} href={r.href} className="side-item" data-on={on(r.href)} aria-current={on(r.href) ? "page" : undefined}>
           <Icon name={r.icon} size={19} /> <span>{r.label}</span>
